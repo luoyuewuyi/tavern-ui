@@ -1,0 +1,203 @@
+<head>
+  <style>
+    :root {
+      --royal-gold: #d4af37;
+      --royal-deep: #1a1410;
+      --velvet: #5a1a2e;
+      --ancient-gold: #e8c87a;
+      --ancient-dark: #0a0a12;
+      --god-eye: #ffcc33;
+      --ghost: rgba(232, 200, 122, 0.6);
+      --ink: #2b2218;
+      --paper: #f3e9d2;
+    }
+    body { margin:0; padding:0; font-family:'Georgia','STSong',serif; background:transparent; color:var(--paper); }
+    .scroll { width:100%; background:linear-gradient(160deg, var(--royal-deep) 0%, #2a1c14 50%, var(--ancient-dark) 100%); border:1px solid var(--royal-gold); border-radius:10px; box-shadow:0 0 18px rgba(212,175,55,0.25), inset 0 0 12px rgba(90,26,46,0.3); padding:12px; box-sizing:border-box; overflow:hidden; }
+    .crest { text-align:center; font-size:1.15em; font-weight:bold; color:var(--royal-gold); text-shadow:0 0 8px rgba(212,175,55,0.5); letter-spacing:3px; border-bottom:1px solid var(--royal-gold); padding-bottom:6px; margin-bottom:12px; }
+    .card { background:rgba(243,233,210,0.04); border:1px solid rgba(212,175,55,0.25); border-radius:7px; margin-bottom:12px; }
+    .card-head { padding:9px 13px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:linear-gradient(90deg, rgba(212,175,55,0.18) 0%, transparent 100%); border-radius:7px 7px 0 0; font-weight:bold; color:var(--royal-gold); user-select:none; }
+    .card-head:hover { background:linear-gradient(90deg, rgba(212,175,55,0.32) 0%, transparent 100%); }
+    .toggle { font-size:0.85em; color:var(--ghost); transition:transform 0.4s; }
+    .card-head.active .toggle { transform:rotate(180deg); }
+    .body { max-height:0; overflow:hidden; transition:max-height 0.55s, padding 0.55s, opacity 0.55s; padding:0 13px; opacity:0; }
+    .body.open { max-height:2400px; padding:13px; opacity:1; }
+    .row { margin-bottom:9px; border-bottom:1px dashed rgba(212,175,55,0.12); padding-bottom:5px; }
+    .row:last-child { border:none; margin-bottom:0; }
+    .lab { font-size:0.82em; color:var(--ghost); margin-bottom:3px; display:flex; align-items:center; }
+    .lab::before { content:'✦'; color:var(--royal-gold); margin-right:5px; font-size:0.8em; }
+    .val { font-size:0.92em; color:var(--paper); line-height:1.45; padding-left:15px; }
+    .hi { color:var(--ancient-gold); font-weight:bold; }
+    .god { border-color:rgba(255,204,51,0.4); }
+    .god .card-head { background:linear-gradient(90deg, rgba(255,204,51,0.18) 0%, transparent 100%); color:var(--god-eye); }
+    .god .lab::before { content:'◈'; color:var(--god-eye); }
+    .monologue { color:rgba(243,233,210,0.85); background:rgba(0,0,0,0.28); padding:6px 9px; border-radius:5px; border-left:2px solid var(--velvet); font-style:italic; }
+    .god-quote { color:var(--god-eye); background:rgba(255,204,51,0.06); border-left:2px solid var(--god-eye); }
+    .npc-item { background:rgba(0,0,0,0.18); border:1px solid rgba(212,175,55,0.15); border-radius:6px; padding:9px; margin-bottom:8px; }
+    .npc-name { color:var(--ancient-gold); font-weight:bold; font-size:0.9em; }
+    .npc-role { color:var(--ghost); font-size:0.78em; margin-left:6px; }
+    .bar { height:6px; background:rgba(0,0,0,0.4); border-radius:3px; overflow:hidden; margin-top:3px; }
+    .bar-fill { height:100%; background:linear-gradient(90deg, var(--velvet), var(--royal-gold)); }
+    .empty { color:var(--ghost); font-style:italic; font-size:0.85em; padding:6px; }
+    .deco { height:1px; background:linear-gradient(90deg, transparent, var(--royal-gold), transparent); margin:12px 0; }
+  </style>
+  <script type="module">
+    function getV(o, p, f='—') { try { return _.get(o, p, f) ?? f; } catch(e){ return f; } }
+    function bar(n) { n = Number(n||0); if(n<0)n=0; if(n>100)n=100; return n; }
+
+    function fill() {
+      const all = _.get(getAllVariables(), 'stat_data', {});
+      // 世界
+      $('#time').text(getV(all,'世界.当前时间'));
+      $('#loc').text(getV(all,'世界.当前地点'));
+      $('#env').text(getV(all,'世界.环境'));
+      // 公主
+      $('#p-name').text(getV(all,'主角.姓名'));
+      $('#p-role').text(getV(all,'主角.身份'));
+      $('#p-look').text(getV(all,'主角.外貌'));
+      $('#p-mood').text(getV(all,'主角.心情'));
+      $('#p-mouth').text(getV(all,'主角.身体状态.嘴'));
+      $('#p-chest').text(getV(all,'主角.身体状态.胸部'));
+      $('#p-pri').text(getV(all,'主角.身体状态.私处'));
+      // 古神
+      $('#g-form').text(getV(all,'古神.形态'));
+      $('#g-look').text(getV(all,'古神.外貌'));
+      $('#g-chr').text(getV(all,'古神.性格'));
+      $('#g-fav').text(getV(all,'古神.偏爱表现'));
+      $('#g-tent').text(getV(all,'古神.触手'));
+      $('#g-ghost').text(getV(all,'古神.隐身动静'));
+      $('#g-mind').text(getV(all,'古神.心声'));
+      $('#g-mood').text(getV(all,'古神.心情'));
+      $('#g-act').text(getV(all,'古神.当前手段'));
+      const gLove = bar(getV(all,'古神.对公主好感',0));
+      const gPos = bar(getV(all,'古神.占有欲',0));
+      $('#g-love-val').text(gLove);
+      $('#g-love-bar').css('width', gLove+'%');
+      $('#g-pos-val').text(gPos);
+      $('#g-pos-bar').css('width', gPos+'%');
+      // 周围人
+      const around = getV(all,'周围人',[]);
+      const $a = $('#around').empty();
+      if (Array.isArray(around) && around.length) {
+        around.forEach(function(n){
+          const love = bar(n['对公主好感']);
+          $a.append('<div class="npc-item">'+
+            '<div><span class="npc-name">'+_.escape(n['名字']||'无名')+'</span><span class="npc-role">'+_.escape(n['身份']||'')+'</span></div>'+
+            '<div class="val" style="padding-left:0;font-size:0.82em;color:var(--ghost);">'+_.escape(n['外貌']||'')+'</div>'+
+            '<div class="row" style="border:none;padding:0;"><div class="lab">心情</div><div class="val">'+_.escape(n['心情']||'—')+'</div></div>'+
+            '<div class="row" style="border:none;padding:0;"><div class="lab">心声</div><div class="val monologue">'+_.escape(n['心声']||'—')+'</div></div>'+
+            '<div class="row" style="border:none;padding:0;"><div class="lab">当前行为</div><div class="val">'+_.escape(n['当前行为']||'—')+'</div></div>'+
+            '<div class="lab">对公主好感 <span style="color:var(--ancient-gold)">'+love+'</span></div>'+
+            '<div class="bar"><div class="bar-fill" style="width:'+love+'%"></div></div>'+
+          '</div>');
+        });
+      } else { $a.append('<div class="empty">此刻无人打扰</div>'); }
+      // 队友
+      const team = getV(all,'队友',[]);
+      const $t = $('#team').empty();
+      if (Array.isArray(team) && team.length) {
+        team.forEach(function(n){
+          const love = bar(n['对公主好感']);
+          $t.append('<div class="npc-item">'+
+            '<div><span class="npc-name">'+_.escape(n['名字']||'无名')+'</span><span class="npc-role">'+_.escape(n['身份']||'')+'</span></div>'+
+            '<div class="row" style="border:none;padding:0;"><div class="lab">心情</div><div class="val">'+_.escape(n['心情']||'—')+'</div></div>'+
+            '<div class="row" style="border:none;padding:0;"><div class="lab">心声</div><div class="val monologue">'+_.escape(n['心声']||'—')+'</div></div>'+
+            '<div class="lab">好感 <span style="color:var(--ancient-gold)">'+love+'</span></div>'+
+            '<div class="bar"><div class="bar-fill" style="width:'+love+'%"></div></div>'+
+          '</div>');
+        });
+      } else { $t.append('<div class="empty">尚无同行队友</div>'); }
+    }
+
+    function bind() {
+      $('.card-head').on('click', function(){
+        const $h=$(this); const $b=$h.next('.body');
+        $h.toggleClass('active'); $b.toggleClass('open');
+        $h.find('.toggle').text($h.hasClass('active') ? '收起' : '展开');
+      });
+    }
+
+    function refresh() {
+      fill();
+      const mvu = window.Mvu;
+      if (mvu && mvu.events && mvu.events.VARIABLE_UPDATE_ENDED && typeof window.eventOn === 'function') {
+        // 已订阅则不重复
+      }
+    }
+
+    async function init() {
+      await waitGlobalInitialized('Mvu');
+      fill(); bind();
+      const mvu = window.Mvu;
+      if (mvu && mvu.events && mvu.events.VARIABLE_UPDATE_ENDED && typeof window.eventOn === 'function') {
+        window.eventOn(mvu.events.VARIABLE_UPDATE_ENDED, fill);
+      }
+      window.setInterval(function(){ try { fill(); } catch(e){} }, 1500);
+    }
+    $(errorCatched(init));
+  </script>
+</head>
+<body>
+  <div class="scroll">
+    <div class="crest">⚜ 蔷薇 · 神眷 · 状态卷轴 ⚜</div>
+
+    <!-- 世界 -->
+    <div class="card">
+      <div class="card-head"><span>✦ 尘世之景</span><span class="toggle">展开</span></div>
+      <div class="body">
+        <div class="row"><div class="lab">时辰</div><div class="val hi" id="time">—</div></div>
+        <div class="row"><div class="lab">所在</div><div class="val" id="loc">—</div></div>
+        <div class="row"><div class="lab">境况</div><div class="val" id="env">—</div></div>
+      </div>
+    </div>
+
+    <!-- 公主 -->
+    <div class="card">
+      <div class="card-head"><span>✦ 公主 · 你</span><span class="toggle">展开</span></div>
+      <div class="body">
+        <div class="row"><div class="lab">名讳 / 身份</div><div class="val"><span class="hi" id="p-name">—</span> · <span id="p-role">—</span></div></div>
+        <div class="row"><div class="lab">形貌</div><div class="val" id="p-look">—</div></div>
+        <div class="row"><div class="lab">心境</div><div class="val monologue" id="p-mood">—</div></div>
+        <div class="deco"></div>
+        <div class="row"><div class="lab">唇</div><div class="val" id="p-mouth">—</div></div>
+        <div class="row"><div class="lab">胸</div><div class="val" id="p-chest">—</div></div>
+        <div class="row"><div class="lab">私处</div><div class="val" id="p-pri">—</div></div>
+      </div>
+    </div>
+
+    <div class="deco"></div>
+
+    <!-- 古神 -->
+    <div class="card god">
+      <div class="card-head"><span>◈ 隐形之主 · 古神</span><span class="toggle">展开</span></div>
+      <div class="body">
+        <div class="row"><div class="lab">形态</div><div class="val hi" id="g-form">—</div></div>
+        <div class="row"><div class="lab">凝体之貌</div><div class="val" id="g-look">—</div></div>
+        <div class="row"><div class="lab">性情</div><div class="val" id="g-chr">—</div></div>
+        <div class="row"><div class="lab">对她的偏爱</div><div class="val" id="g-fav">—</div></div>
+        <div class="row"><div class="lab">触手</div><div class="val" id="g-tent">—</div></div>
+        <div class="row"><div class="lab">隐身动静</div><div class="val" id="g-ghost">—</div></div>
+        <div class="row"><div class="lab">当下手段</div><div class="val" id="g-act">—</div></div>
+        <div class="deco"></div>
+        <div class="row"><div class="lab">心境</div><div class="val" id="g-mood">—</div></div>
+        <div class="row"><div class="lab">神之独白</div><div class="val monologue god-quote" id="g-mind">—</div></div>
+        <div class="deco"></div>
+        <div class="row"><div class="lab">眷恋 <span style="color:var(--god-eye)" id="g-love-val">0</span></div><div class="bar"><div class="bar-fill" id="g-love-bar" style="width:0%"></div></div></div>
+        <div class="row"><div class="lab">占有 <span style="color:var(--god-eye)" id="g-pos-val">0</span></div><div class="bar"><div class="bar-fill" id="g-pos-bar" style="width:0%"></div></div></div>
+      </div>
+    </div>
+
+    <div class="deco"></div>
+
+    <!-- 周围人 -->
+    <div class="card">
+      <div class="card-head"><span>✦ 身边之人 · 心声</span><span class="toggle">展开</span></div>
+      <div class="body" id="around"></div>
+    </div>
+
+    <!-- 队友 -->
+    <div class="card">
+      <div class="card-head"><span>✦ 同行队友</span><span class="toggle">展开</span></div>
+      <div class="body" id="team"></div>
+    </div>
+  </div>
+</body>
