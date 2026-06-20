@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>全息网游模拟器</title>
+<style>
+/* 全息网游模拟器 · 大前端卡样式
+   主题：赛博全息 · 深色霓虹 · 玻璃拟态 · 响应式
+   字体：Noto Sans SC / Orbitron / JetBrains Mono
+*/
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --bg-void: #0a0a14;
+  --bg-panel: rgba(18, 16, 38, 0.78);
+  --bg-card: rgba(28, 24, 56, 0.65);
+  --neon-cyan: #4de8ff;
+  --neon-purple: #a06bff;
+  --neon-pink: #ff5cc8;
+  --neon-gold: #ffcf5c;
+  --text-main: #e6e8ff;
+  --text-dim: #9aa0c8;
+  --text-muted: #6b7090;
+  --border-glow: rgba(77, 232, 255, 0.25);
+  --border-soft: rgba(160, 107, 255, 0.2);
+  --grad-holo: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink));
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: var(--bg-void);
+  color: var(--text-main);
+  font-family: 'Noto Sans SC', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -2;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(77, 232, 255, 0.12), transparent 40%),
+    radial-gradient(circle at 85% 75%, rgba(160, 107, 255, 0.14), transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(255, 92, 200, 0.06), transparent 50%);
+}
+body::after {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(77,232,255,0.02) 0, rgba(77,232,255,0.02) 1px, transparent 1px, transparent 3px);
+  animation: scan 8s linear infinite;
+}
+@keyframes scan { 0% { transform: translateY(0); } 100% { transform: translateY(3px); } }
+
+/* ===== 开局表单 ===== */
+.opening-wrap {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 24px 16px;
+}
+.opening-card {
+  width: 100%; max-width: 640px;
+  background: var(--bg-panel); backdrop-filter: blur(18px);
+  border: 1px solid var(--border-glow); border-radius: 18px;
+  box-shadow: 0 0 40px rgba(77, 232, 255, 0.15), inset 0 0 20px rgba(160, 107, 255, 0.08);
+  padding: 32px 28px; position: relative; overflow: hidden;
+  animation: scaleIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.opening-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--grad-holo); box-shadow: 0 0 12px var(--neon-cyan);
+}
+.opening-logo {
+  font-family: 'Orbitron', sans-serif; font-size: 1.7rem; font-weight: 700;
+  text-align: center; background: var(--grad-holo); -webkit-background-clip: text;
+  background-clip: text; color: transparent; letter-spacing: 3px;
+  filter: drop-shadow(0 0 8px rgba(77, 232, 255, 0.4));
+}
+.opening-sub { text-align: center; color: var(--text-dim); font-size: 0.85rem; margin: 6px 0 24px; letter-spacing: 2px; }
+.form-section { margin-bottom: 22px; padding: 16px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-soft); }
+.section-title { font-family: 'Orbitron', sans-serif; color: var(--neon-cyan); font-size: 0.95rem; margin-bottom: 14px; letter-spacing: 1px; }
+.field { margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+.field label { display: block; color: var(--text-dim); font-size: 0.82rem; margin-bottom: 7px; }
+.field input[type=text], .field input[type=number] {
+  width: 100%; padding: 10px 12px; background: rgba(10, 8, 24, 0.7);
+  border: 1px solid var(--border-soft); border-radius: 8px; color: var(--text-main);
+  font-family: inherit; font-size: 0.9rem; transition: all 0.2s;
+}
+.field input:focus { outline: none; border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(77, 232, 255, 0.25); }
+.btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.opt-btn {
+  padding: 7px 14px; background: rgba(10, 8, 24, 0.6); border: 1px solid var(--border-soft);
+  border-radius: 20px; color: var(--text-dim); cursor: pointer; font-size: 0.82rem;
+  font-family: inherit; transition: all 0.2s;
+}
+.opt-btn:hover { border-color: var(--neon-purple); color: var(--text-main); }
+.opt-btn.selected {
+  background: linear-gradient(135deg, rgba(77,232,255,0.2), rgba(160,107,255,0.2));
+  border-color: var(--neon-cyan); color: var(--neon-cyan);
+  box-shadow: 0 0 12px rgba(77, 232, 255, 0.3);
+}
+.submit-row { display: flex; gap: 12px; margin-top: 8px; }
+.submit-btn {
+  flex: 1; padding: 13px; background: var(--grad-holo); border: none; border-radius: 10px;
+  color: #0a0a14; font-weight: 700; font-size: 1rem; cursor: pointer; font-family: 'Orbitron', sans-serif;
+  letter-spacing: 2px; transition: all 0.25s; box-shadow: 0 0 20px rgba(77, 232, 255, 0.3);
+}
+.submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 28px rgba(160, 107, 255, 0.5); }
+.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.random-btn {
+  padding: 13px 20px; background: rgba(10, 8, 24, 0.7); border: 1px solid var(--border-soft);
+  border-radius: 10px; color: var(--text-dim); cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+.random-btn:hover { border-color: var(--neon-gold); color: var(--neon-gold); }
+.opening-status { margin-top: 14px; text-align: center; color: var(--text-dim); font-size: 0.85rem; min-height: 20px; }
+.opening-status.err { color: var(--neon-pink); }
+
+/* ===== 游戏主界面 ===== */
+.game-wrap { position: relative; min-height: 100vh; padding: 14px; }
+.fullscreen-btn {
+  position: fixed; top: 14px; right: 14px; z-index: 50;
+  width: 38px; height: 38px; border-radius: 9px; cursor: pointer;
+  background: var(--bg-panel); border: 1px solid var(--border-glow);
+  color: var(--neon-cyan); font-size: 1.1rem; backdrop-filter: blur(10px);
+  transition: all 0.2s;
+}
+.fullscreen-btn:hover { box-shadow: 0 0 14px rgba(77, 232, 255, 0.4); transform: scale(1.08); }
+.game-layout { display: flex; gap: 14px; max-width: 1400px; margin: 0 auto; }
+.game-main {
+  flex: 1; min-width: 0; background: var(--bg-panel); backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glow); border-radius: 14px; padding: 18px;
+  display: flex; flex-direction: column; min-height: calc(100vh - 28px);
+}
+.game-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--border-soft);
+}
+.game-title { font-family: 'Orbitron', sans-serif; font-size: 1.05rem; color: var(--neon-cyan); letter-spacing: 1px; filter: drop-shadow(0 0 6px rgba(77,232,255,0.3)); }
+.turn-info { font-size: 0.8rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+.story-area {
+  flex: 1; overflow-y: auto; padding: 14px 16px; margin-bottom: 14px;
+  background: rgba(10, 8, 24, 0.4); border-radius: 10px; border: 1px solid var(--border-soft);
+  line-height: 1.85; font-size: 0.95rem; min-height: 200px;
+}
+.maintext { color: var(--text-main); animation: fadeIn 0.4s ease; user-select: text; cursor: pointer; }
+.maintext.streaming { color: var(--text-dim); font-style: italic; }
+.loading { color: var(--text-muted); text-align: center; padding: 30px; font-size: 0.85rem; }
+.options-area { display: flex; flex-direction: column; gap: 9px; margin-bottom: 14px; }
+.option-btn {
+  display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+  background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 10px;
+  color: var(--text-main); cursor: pointer; font-family: inherit; font-size: 0.9rem;
+  text-align: left; transition: all 0.2s; animation: slideInUp 0.35s ease backwards;
+}
+.option-btn:nth-child(2) { animation-delay: 0.05s; }
+.option-btn:nth-child(3) { animation-delay: 0.1s; }
+.option-btn:nth-child(4) { animation-delay: 0.15s; }
+.option-btn:hover:not(.disabled) {
+  border-color: var(--neon-purple); background: rgba(160, 107, 255, 0.12);
+  transform: translateX(4px); box-shadow: 0 0 14px rgba(160, 107, 255, 0.2);
+}
+.option-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+.opt-id {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--grad-holo); color: #0a0a14; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; font-size: 0.82rem;
+  font-family: 'Orbitron', sans-serif;
+}
+.opt-text { flex: 1; }
+.generating { display: flex; align-items: center; gap: 6px; color: var(--neon-cyan); font-size: 0.85rem; margin-bottom: 12px; padding: 0 4px; }
+.gen-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--neon-cyan); animation: pulse 1.2s infinite; }
+.gen-dot:nth-child(2) { animation-delay: 0.2s; }
+.gen-dot:nth-child(3) { animation-delay: 0.4s; }
+.input-area { display: flex; gap: 10px; }
+.input-area input {
+  flex: 1; padding: 11px 14px; background: rgba(10, 8, 24, 0.7);
+  border: 1px solid var(--border-soft); border-radius: 9px; color: var(--text-main);
+  font-family: inherit; font-size: 0.9rem;
+}
+.input-area input:focus { outline: none; border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(77,232,255,0.25); }
+.send-btn {
+  padding: 11px 22px; background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+  border: none; border-radius: 9px; color: #0a0a14; font-weight: 700; cursor: pointer;
+  font-family: inherit; transition: all 0.2s;
+}
+.send-btn:hover { box-shadow: 0 0 14px rgba(77, 232, 255, 0.4); }
+
+/* ===== 状态栏侧栏 ===== */
+.status-sidebar {
+  width: 320px; flex-shrink: 0; background: var(--bg-panel); backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glow); border-radius: 14px; padding: 14px;
+  overflow-y: auto; max-height: calc(100vh - 28px);
+}
+.sidebar-loading { color: var(--text-muted); text-align: center; padding: 30px; font-size: 0.85rem; }
+.sb-section { margin-bottom: 16px; padding: 12px; background: var(--bg-card); border-radius: 10px; border: 1px solid var(--border-soft); }
+.sb-section:last-child { margin-bottom: 0; }
+.sb-title {
+  font-family: 'Orbitron', sans-serif; font-size: 0.82rem; color: var(--neon-purple);
+  margin-bottom: 10px; letter-spacing: 1px; padding-bottom: 6px; border-bottom: 1px solid var(--border-soft);
+  filter: drop-shadow(0 0 4px rgba(160,107,255,0.3));
+}
+.sb-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 4px 0; font-size: 0.82rem; }
+.sb-row span { color: var(--text-muted); flex-shrink: 0; }
+.sb-row b { color: var(--text-main); text-align: right; font-weight: 500; word-break: break-all; }
+.sb-row b.mood { color: var(--neon-pink); font-style: italic; }
+.love-bar { height: 5px; background: rgba(10, 8, 24, 0.6); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+.love-bar.small { height: 4px; }
+.love-fill { height: 100%; background: linear-gradient(90deg, var(--neon-pink), var(--neon-purple)); transition: width 0.5s ease; box-shadow: 0 0 6px rgba(255, 92, 200, 0.4); }
+.npc-card { padding: 9px; background: rgba(10, 8, 24, 0.5); border-radius: 8px; margin-top: 8px; border: 1px solid var(--border-soft); }
+.npc-head { display: flex; justify-content: space-between; align-items: center; }
+.npc-head b { color: var(--neon-gold); font-size: 0.85rem; }
+.npc-head span { color: var(--text-muted); font-size: 0.72rem; }
+.npc-sub { color: var(--text-dim); font-size: 0.75rem; margin: 3px 0; }
+.npc-love { color: var(--neon-pink); font-size: 0.78rem; margin-bottom: 4px; }
+
+/* ===== 动画 ===== */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.3); } }
+
+/* ===== 滚动条 ===== */
+.story-area::-webkit-scrollbar, .status-sidebar::-webkit-scrollbar { width: 6px; }
+.story-area::-webkit-scrollbar-thumb, .status-sidebar::-webkit-scrollbar-thumb { background: rgba(77, 232, 255, 0.3); border-radius: 3px; }
+.story-area::-webkit-scrollbar-thumb:hover, .status-sidebar::-webkit-scrollbar-thumb:hover { background: rgba(77, 232, 255, 0.5); }
+
+/* ===== 响应式 ===== */
+@media (max-width: 900px) {
+  .game-layout { flex-direction: column; }
+  .status-sidebar { width: 100%; max-height: none; order: 2; }
+  .game-main { min-height: 60vh; order: 1; }
+}
+@media (max-width: 560px) {
+  .opening-card { padding: 22px 16px; }
+  .opening-logo { font-size: 1.3rem; }
+  .game-wrap { padding: 8px; }
+  .game-main, .status-sidebar { padding: 12px; }
+  .opt-btn { font-size: 0.78rem; padding: 6px 11px; }
+  .option-btn { padding: 10px 12px; font-size: 0.85rem; }
+  .fullscreen-btn { width: 34px; height: 34px; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+"use strict";
+(() => {
+  // src/全息网游模拟器/utils/gameInitializer.ts
+  var isInitializing = false;
+  function buildInitialStat(form) {
+    return {
+      \u4E16\u754C: { \u5F53\u524D\u65F6\u95F4: "2026\u5E746\u670820\u65E5 \xB7 \u5468\u516D \xB7 \u5348\u540E", \u5F53\u524D\u5730\u70B9: "\u73B0\u5B9E\xB7\u5367\u5BA4", \u7B2C\u51E0\u56DE\u5408: 1, \u56DE\u5408\u7C7B\u578B: "\u4E8B\u4EF6\u56DE\u5408", \u5DF2\u8F93\u51FA\u6B21\u6570: 0 },
+      \u4E3B\u63A7: {
+        \u73B0\u5B9E\u59D3\u540D: form.\u73B0\u5B9E\u59D3\u540D,
+        \u73B0\u5B9E\u8EAB\u4EFD: form.\u73B0\u5B9E\u8EAB\u4EFD,
+        \u73B0\u5B9E\u8D44\u91D1: 500,
+        \u6027\u522B: form.\u6027\u522B,
+        \u6027\u53D6\u5411: form.\u6027\u53D6\u5411,
+        \u4E0A\u4E0B\u4F4D: form.\u4E0A\u4E0B\u4F4D,
+        \u5E74\u9F84: form.\u5E74\u9F84,
+        \u5FC3\u60C5: "\u6234\u4E0A\u5168\u606F\u8231\uFF0C\u51C6\u5907\u8FDB\u5165\u300A" + form.\u6E38\u620F\u540D\u79F0 + "\u300B\u7684\u4E16\u754C"
+      },
+      \u5F53\u524D\u89D2\u8272: {
+        \u7F51\u540D: form.\u7F51\u540D,
+        \u7B49\u7EA7: 1,
+        \u804C\u4E1A: form.\u804C\u4E1A,
+        \u5E2E\u4F1A: "\u72EC\u884C",
+        \u4E2A\u6027\u7B7E\u540D: form.\u4E2A\u6027\u7B7E\u540D,
+        \u79F0\u53F7: "\u840C\u65B0\u73A9\u5BB6",
+        \u6218\u529B\u8BC4\u5206: 100,
+        PVP\u6BB5\u4F4D: "\u65E0",
+        \u6E38\u620F\u5E01: 1e3,
+        \u5145\u503C\u5E01: 0,
+        \u88C5\u5907: "\u65B0\u624B\u5E03\u8863",
+        \u65F6\u88C5: "\u65E0",
+        \u662F\u5426\u5728\u7EBF: true
+      },
+      \u793E\u4EA4: { \u597D\u53CB\u6570: 0, \u5E08\u5F92: "\u65E0", \u7ED3\u4E49: "\u65E0", \u60C5\u7F18: "\u65E0" },
+      \u5F53\u524D\u4E92\u52A8: { \u89D2\u8272\u540D: "\u65E0", \u597D\u611F\u5EA6: 0, \u597D\u611F\u9636\u6BB5: "\u65E0" },
+      \u53EF\u653B\u7565\u89D2\u8272: [],
+      \u6E38\u620F\u9898\u6750: form.\u6E38\u620F\u9898\u6750,
+      \u6E38\u620F\u540D\u79F0: form.\u6E38\u620F\u540D\u79F0
+    };
+  }
+  async function initializeGameVariables(form) {
+    console.log("\u{1F3AE} [gameInitializer] \u521D\u59CB\u5316\u53D8\u91CF, \u8868\u5355=", form);
+    try {
+      await waitGlobalInitialized("Mvu");
+      const stat = buildInitialStat(form);
+      updateVariablesWith((v) => {
+        const nv = { ...v };
+        nv.stat_data = stat;
+        return nv;
+      }, { type: "message", message_id: 0 });
+      console.log("\u2705 [gameInitializer] 0\u5C42\u53D8\u91CF\u5DF2\u5199\u5165");
+      return true;
+    } catch (e) {
+      console.error("\u274C [gameInitializer] \u521D\u59CB\u5316\u5931\u8D25:", e);
+      return false;
+    }
+  }
+  async function createOpeningStoryMessage(form) {
+    if (isInitializing) {
+      console.warn("\u26A0\uFE0F [gameInitializer] \u6B63\u5728\u521D\u59CB\u5316\uFF0C\u8DF3\u8FC7\u91CD\u590D\u8C03\u7528");
+      return false;
+    }
+    isInitializing = true;
+    try {
+      const lastId = getLastMessageId();
+      if (lastId > 0) {
+        const existing = getChatMessages(1);
+        if (existing && existing.length > 0 && existing[0].message) {
+          console.log("\u2139\uFE0F [gameInitializer] 1\u5C42\u5DF2\u5B58\u5728\uFF0C\u8DF3\u8FC7\u521B\u5EFA");
+          return true;
+        }
+      }
+      const openingText = buildOpeningNarrative(form);
+      const mvuData = { stat_data: buildInitialStat(form) };
+      await createChatMessages([{
+        role: "assistant",
+        message: openingText,
+        data: mvuData,
+        name: "\u300A" + form.\u6E38\u620F\u540D\u79F0 + "\u300B"
+      }], { insert_before: "end", refresh: "none" });
+      console.log("\u2705 [gameInitializer] \u5F00\u5C40\u6D88\u606F\u5DF2\u521B\u5EFA");
+      return true;
+    } catch (e) {
+      console.error("\u274C [gameInitializer] \u521B\u5EFA\u5F00\u5C40\u6D88\u606F\u5931\u8D25:", e);
+      return false;
+    } finally {
+      setTimeout(() => {
+        isInitializing = false;
+      }, 2e3);
+    }
+  }
+  function buildOpeningNarrative(form) {
+    const topic = form.\u6E38\u620F\u9898\u6750;
+    const gameName = form.\u6E38\u620F\u540D\u79F0;
+    return `<maintext>\u300A${gameName}\u300B\u2014\u2014\u4E00\u6B3E${topic}\u9898\u6750\u7684\u5168\u606FMMORPG\uFF0C\u516C\u6D4B\u9996\u65E5\u3002
+
+\u5168\u606F\u8231\u7F13\u7F13\u5408\u4E0A\uFF0C\u4E94\u611F\u88AB\u4E00\u70B9\u70B9\u63A5\u5165\u865A\u62DF\u4E16\u754C\u3002\u4F60\u7741\u5F00\u773C\uFF0C\u773C\u524D\u662F\u65B0\u624B\u6307\u5F15\u7684\u6D6E\u7A7A\u5E7F\u573A\uFF0C${topic === "\u897F\u5E7B" ? "\u54E5\u7279\u5F0F\u5C16\u5854\u4E0E\u9B54\u6CD5\u7B26\u6587\u5728\u4E91\u7AEF\u6D41\u8F6C" : topic === "\u6B66\u4FA0" ? "\u9752\u74E6\u98DE\u6A90\u4E0E\u6C5F\u6E56\u64C2\u53F0\u5728\u4E91\u96FE\u4E2D\u9690\u73B0" : topic === "\u672B\u4E16" ? "\u5E9F\u589F\u9713\u8679\u4E0E\u751F\u9508\u673A\u7532\u5728\u7070\u96FE\u91CC\u95EA\u70C1" : "\u661F\u8230\u7A79\u9876\u4E0E\u5168\u606F\u5E7F\u544A\u5728\u865A\u7A7A\u4E2D\u94FA\u5C55"}\u3002\u7CFB\u7EDF\u63D0\u793A\u5728\u8033\u8FB9\u54CD\u8D77\u2014\u2014
+
+\u300C\u6B22\u8FCE\u6765\u5230\u300A${gameName}\u300B\u3002\u4F60\u7684\u89D2\u8272\u3010${form.\u7F51\u540D}\u3011\u5DF2\u521B\u5EFA\uFF0C\u804C\u4E1A\uFF1A${form.\u804C\u4E1A}\u3002\u4E2A\u6027\u7B7E\u540D\u5DF2\u8BBE\u4E3A\uFF1A\u300E${form.\u4E2A\u6027\u7B7E\u540D || "\u8FD9\u4E2A\u4EBA\u5F88\u61D2\uFF0C\u4EC0\u4E48\u90FD\u6CA1\u5199"}\u300F\u3002\u300D
+
+\u4F60\u662F\u516C\u6D4B\u73A9\u5BB6\u4E4B\u4E00\uFF0C${form.\u73B0\u5B9E\u8EAB\u4EFD}\uFF0C\u8D81\u7740\u5468\u672B\u6234\u4E0A\u5168\u606F\u8231\u62A2\u9996\u65E5\u540D\u989D\u3002\u73B0\u5B9E\u4E0E\u6E38\u620F\u53CC\u7EBF\u5E76\u884C\uFF0C\u4ECE\u4ECA\u5929\u8D77\uFF0C\u4F60\u7684\u53E6\u4E00\u6BB5\u4EBA\u751F\u5F00\u59CB\u4E86\u3002
+
+\u65B0\u624B\u5E7F\u573A\u4E0A\u5DF2\u7ECF\u7199\u7199\u6518\u6518\uFF0C\u4E16\u754C\u9891\u9053\u5237\u5F97\u98DE\u5FEB\uFF0C\u6709\u4EBA\u5728\u558A\u7EC4\u961F\uFF0C\u6709\u4EBA\u5728\u5356\u4E1C\u897F\uFF0C\u6709\u4EBA\u5728\u590D\u8BFB\u6C99\u96D5\u8868\u60C5\u5305\u3002\u4F60\u7AD9\u5728\u4EBA\u6D41\u4E2D\u592E\uFF0C\u51C6\u5907\u8FC8\u51FA\u7B2C\u4E00\u6B65\u3002</maintext>
+
+<option id="A">\u5148\u6253\u5F00\u4E16\u754C\u9891\u9053\u770B\u70ED\u95F9</option>
+<option id="B">\u76F4\u63A5\u63A5\u65B0\u624B\u4EFB\u52A1\uFF0C\u95F7\u5934\u7EC3\u7EA7</option>
+<option id="C">\u5728\u5E7F\u573A\u901B\u901B\uFF0C\u770B\u770B\u5176\u4ED6\u73A9\u5BB6</option>
+<option id="D">\u6253\u5F00\u89D2\u8272\u9762\u677F\uFF0C\u7814\u7A76\u81EA\u5DF1\u7684\u5C5E\u6027</option>`;
+  }
+
+  // src/全息网游模拟器/utils/messageParser.ts
+  function cleanThinking(messageContent) {
+    let cleaned = messageContent.replace(/<thinking>[\s\S]*?<\/thinking>/gi, "");
+    cleaned = cleaned.replace(/<redacted_reasoning>[\s\S]*?<\/redacted_reasoning>/gi, "");
+    cleaned = cleaned.replace(/<antml:thinking>[\s\S]*?<\/antml:thinking>/gi, "");
+    const thinkingStart = cleaned.search(/<thinking>/i);
+    if (thinkingStart !== -1) cleaned = cleaned.substring(0, thinkingStart);
+    return cleaned;
+  }
+  function parseMaintext(messageContent) {
+    if (!messageContent) return "";
+    const cleaned = cleanThinking(messageContent);
+    const matches = cleaned.match(/<maintext>([\s\S]*?)<\/maintext>/gi);
+    if (!matches || matches.length === 0) {
+      const fallback = cleaned.replace(/<option[\s\S]*?<\/option>/gi, "").replace(/<sum>[\s\S]*?<\/sum>/gi, "").replace(/<UpdateVariable>[\s\S]*?<\/UpdateVariable>/gi, "").replace(/<StatusPlaceHolderImpl\s*\/>/gi, "").trim();
+      return fallback;
+    }
+    const lastMatch = matches[matches.length - 1];
+    const content = lastMatch.match(/<maintext>([\s\S]*?)<\/maintext>/i);
+    return content ? content[1].trim() : "";
+  }
+  function parseOptions(messageContent) {
+    if (!messageContent) return [];
+    const cleaned = cleanThinking(messageContent);
+    const optionWithIdRegex = /<option\s+id="([^"]+)"[^>]*>([\s\S]*?)<\/option>/gi;
+    const optionsWithId = [];
+    let match;
+    while ((match = optionWithIdRegex.exec(cleaned)) !== null) {
+      optionsWithId.push({ id: match[1].trim(), text: match[2].trim() });
+    }
+    if (optionsWithId.length > 0) return optionsWithId;
+    const optionMatch = cleaned.match(/<option>([\s\S]*?)<\/option>/i);
+    if (!optionMatch) return [];
+    const optionText = optionMatch[1].trim();
+    const lines = optionText.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+    const optionPattern = /^([A-Z])[.、:]\s*/;
+    const hasLetterPrefix = lines.some((l) => optionPattern.test(l));
+    if (hasLetterPrefix) {
+      const options = [];
+      let current = [];
+      for (const line of lines) {
+        if (optionPattern.test(line)) {
+          if (current.length > 0) {
+            const text = current.join("\n");
+            const id = text.match(/^([A-Z])[.、:]/)?.[1] || String.fromCharCode(65 + options.length);
+            options.push({ id, text: text.replace(optionPattern, "").trim() });
+            current = [];
+          }
+          current.push(line);
+        } else {
+          if (current.length > 0) current.push(line);
+        }
+      }
+      if (current.length > 0) {
+        const text = current.join("\n");
+        const id = text.match(/^([A-Z])[.、:]/)?.[1] || String.fromCharCode(65 + options.length);
+        options.push({ id, text: text.replace(optionPattern, "").trim() });
+      }
+      return options;
+    }
+    return lines.map((line, i) => ({ id: String.fromCharCode(65 + i), text: line }));
+  }
+  function parseSum(messageContent) {
+    if (!messageContent) return "";
+    const cleaned = cleanThinking(messageContent);
+    const match = cleaned.match(/<sum>([\s\S]*?)<\/sum>/i);
+    return match ? match[1].trim() : "";
+  }
+  function loadFromLatestMessage() {
+    try {
+      const lastId = getLastMessageId();
+      console.log("\u{1F4D6} [messageParser] lastMessageId =", lastId);
+      if (lastId < 0) return { maintext: "", options: [], sum: "" };
+      let asstMsgs = getChatMessages(lastId, { role: "assistant" });
+      let latest = asstMsgs && asstMsgs.length > 0 ? asstMsgs[0] : null;
+      if (!latest) {
+        for (let i = lastId; i >= 0 && i >= lastId - 5; i--) {
+          const m = getChatMessages(i, { role: "assistant" });
+          if (m && m.length > 0 && m[0].message) {
+            latest = m[0];
+            break;
+          }
+        }
+      }
+      if (!latest) {
+        const all = getChatMessages(lastId);
+        if (all && all.length > 0) latest = all[0];
+      }
+      if (!latest) return { maintext: "", options: [], sum: "" };
+      const content = latest.message || "";
+      let userMessageId;
+      if (latest.message_id > 0) {
+        const u = getChatMessages(latest.message_id - 1, { role: "user" });
+        if (u && u.length > 0) userMessageId = u[0].message_id;
+      }
+      return {
+        maintext: parseMaintext(content),
+        options: parseOptions(content),
+        sum: parseSum(content),
+        messageId: latest.message_id,
+        userMessageId,
+        fullMessage: content
+      };
+    } catch (e) {
+      console.error("\u274C [messageParser] \u52A0\u8F7D\u5931\u8D25:", e);
+      return { maintext: "", options: [], sum: "" };
+    }
+  }
+
+  // src/全息网游模拟器/utils/variableReader.ts
+  function pick(obj, path, fallback) {
+    if (!obj) return fallback;
+    const parts = path.split(".");
+    let cur = obj;
+    for (const p of parts) {
+      if (cur == null) return fallback;
+      if (Array.isArray(cur) && cur.length > 0) cur = cur[0];
+      if (cur == null) return fallback;
+      cur = cur[p];
+    }
+    if (Array.isArray(cur) && cur.length > 0) return cur[0] ?? fallback;
+    return cur ?? fallback;
+  }
+  function statToGameData(stat) {
+    return {
+      \u4E16\u754C: {
+        \u5F53\u524D\u65F6\u95F4: pick(stat, "\u4E16\u754C.\u5F53\u524D\u65F6\u95F4", "\u2014"),
+        \u5F53\u524D\u5730\u70B9: pick(stat, "\u4E16\u754C.\u5F53\u524D\u5730\u70B9", "\u2014"),
+        \u7B2C\u51E0\u56DE\u5408: pick(stat, "\u4E16\u754C.\u7B2C\u51E0\u56DE\u5408", 0),
+        \u56DE\u5408\u7C7B\u578B: pick(stat, "\u4E16\u754C.\u56DE\u5408\u7C7B\u578B", "\u672A\u5F00\u59CB"),
+        \u5DF2\u8F93\u51FA\u6B21\u6570: pick(stat, "\u4E16\u754C.\u5DF2\u8F93\u51FA\u6B21\u6570", 0)
+      },
+      \u4E3B\u63A7: {
+        \u73B0\u5B9E\u59D3\u540D: pick(stat, "\u4E3B\u63A7.\u73B0\u5B9E\u59D3\u540D", "{{user}}"),
+        \u73B0\u5B9E\u8EAB\u4EFD: pick(stat, "\u4E3B\u63A7.\u73B0\u5B9E\u8EAB\u4EFD", "\u672A\u8BBE\u5B9A"),
+        \u73B0\u5B9E\u8D44\u91D1: pick(stat, "\u4E3B\u63A7.\u73B0\u5B9E\u8D44\u91D1", 0),
+        \u6027\u522B: pick(stat, "\u4E3B\u63A7.\u6027\u522B", "\u672A\u8BBE\u5B9A"),
+        \u6027\u53D6\u5411: pick(stat, "\u4E3B\u63A7.\u6027\u53D6\u5411", "\u672A\u8BBE\u5B9A"),
+        \u4E0A\u4E0B\u4F4D: pick(stat, "\u4E3B\u63A7.\u4E0A\u4E0B\u4F4D", "\u672A\u8BBE\u5B9A"),
+        \u5E74\u9F84: pick(stat, "\u4E3B\u63A7.\u5E74\u9F84", 16),
+        \u5FC3\u60C5: pick(stat, "\u4E3B\u63A7.\u5FC3\u60C5", "\u2014")
+      },
+      \u5F53\u524D\u89D2\u8272: {
+        \u7F51\u540D: pick(stat, "\u5F53\u524D\u89D2\u8272.\u7F51\u540D", "\u672A\u521B\u5EFA"),
+        \u7B49\u7EA7: pick(stat, "\u5F53\u524D\u89D2\u8272.\u7B49\u7EA7", 1),
+        \u804C\u4E1A: pick(stat, "\u5F53\u524D\u89D2\u8272.\u804C\u4E1A", "\u672A\u9009\u5B9A"),
+        \u5E2E\u4F1A: pick(stat, "\u5F53\u524D\u89D2\u8272.\u5E2E\u4F1A", "\u72EC\u884C"),
+        \u4E2A\u6027\u7B7E\u540D: pick(stat, "\u5F53\u524D\u89D2\u8272.\u4E2A\u6027\u7B7E\u540D", ""),
+        \u79F0\u53F7: pick(stat, "\u5F53\u524D\u89D2\u8272.\u79F0\u53F7", ""),
+        \u6218\u529B\u8BC4\u5206: pick(stat, "\u5F53\u524D\u89D2\u8272.\u6218\u529B\u8BC4\u5206", 0),
+        PVP\u6BB5\u4F4D: pick(stat, "\u5F53\u524D\u89D2\u8272.PVP\u6BB5\u4F4D", "\u65E0"),
+        \u6E38\u620F\u5E01: pick(stat, "\u5F53\u524D\u89D2\u8272.\u6E38\u620F\u5E01", 0),
+        \u5145\u503C\u5E01: pick(stat, "\u5F53\u524D\u89D2\u8272.\u5145\u503C\u5E01", 0),
+        \u88C5\u5907: pick(stat, "\u5F53\u524D\u89D2\u8272.\u88C5\u5907", "\u65E0"),
+        \u65F6\u88C5: pick(stat, "\u5F53\u524D\u89D2\u8272.\u65F6\u88C5", "\u65E0"),
+        \u662F\u5426\u5728\u7EBF: pick(stat, "\u5F53\u524D\u89D2\u8272.\u662F\u5426\u5728\u7EBF", false)
+      },
+      \u793E\u4EA4: {
+        \u597D\u53CB\u6570: pick(stat, "\u793E\u4EA4.\u597D\u53CB\u6570", 0),
+        \u5E08\u5F92: pick(stat, "\u793E\u4EA4.\u5E08\u5F92", "\u65E0"),
+        \u7ED3\u4E49: pick(stat, "\u793E\u4EA4.\u7ED3\u4E49", "\u65E0"),
+        \u60C5\u7F18: pick(stat, "\u793E\u4EA4.\u60C5\u7F18", "\u65E0")
+      },
+      \u5F53\u524D\u4E92\u52A8: {
+        \u89D2\u8272\u540D: pick(stat, "\u5F53\u524D\u4E92\u52A8.\u89D2\u8272\u540D", "\u65E0"),
+        \u597D\u611F\u5EA6: pick(stat, "\u5F53\u524D\u4E92\u52A8.\u597D\u611F\u5EA6", 0),
+        \u597D\u611F\u9636\u6BB5: pick(stat, "\u5F53\u524D\u4E92\u52A8.\u597D\u611F\u9636\u6BB5", "\u65E0")
+      },
+      \u53EF\u653B\u7565\u89D2\u8272: Array.isArray(stat?.\u53EF\u653B\u7565\u89D2\u8272) ? stat.\u53EF\u653B\u7565\u89D2\u8272 : [],
+      \u6E38\u620F\u9898\u6750: pick(stat, "\u6E38\u620F\u9898\u6750", "\u672A\u8BBE\u5B9A"),
+      \u6E38\u620F\u540D\u79F0: pick(stat, "\u6E38\u620F\u540D\u79F0", "\u672A\u8BBE\u5B9A")
+    };
+  }
+  async function readStatData() {
+    try {
+      await waitGlobalInitialized("Mvu");
+      const md = Mvu.getMvuData?.({ type: "message", message_id: "latest" });
+      if (md?.stat_data && typeof md.stat_data === "object") return md.stat_data;
+    } catch (e) {
+      console.warn("\u26A0\uFE0F [variableReader] Mvu\u8BFB\u5931\u8D25", e);
+    }
+    try {
+      const lastId = getLastMessageId();
+      const asst = getChatMessages(lastId, { role: "assistant" });
+      if (asst && asst.length > 0 && asst[0].data?.stat_data) return asst[0].data.stat_data;
+    } catch (e) {
+      console.warn("\u26A0\uFE0F [variableReader] \u6D88\u606Fdata\u8BFB\u5931\u8D25", e);
+    }
+    try {
+      const v = getVariables({ type: "message", message_id: "latest" });
+      if (v?.stat_data) return v.stat_data;
+    } catch (e) {
+      console.warn("\u26A0\uFE0F [variableReader] getVariables\u8BFB\u5931\u8D25", e);
+    }
+    try {
+      const v0 = getVariables({ type: "message", message_id: 0 });
+      if (v0?.stat_data) return v0.stat_data;
+    } catch (e) {
+      console.warn("\u26A0\uFE0F [variableReader] 0\u5C42\u8BFB\u5931\u8D25", e);
+    }
+    return null;
+  }
+  async function readGameData() {
+    const stat = await readStatData();
+    if (!stat) {
+      console.warn("\u26A0\uFE0F [variableReader] \u65E0\u53EF\u7528 stat_data");
+      return null;
+    }
+    return statToGameData(stat);
+  }
+
+  // src/全息网游模拟器/utils/requestHandler.ts
+  var isRequesting = false;
+  function stripThinking(text) {
+    return text.replace(/<thinking>[\s\S]*?<\/thinking>/gi, "").replace(/<antml:thinking>[\s\S]*?<\/antml:thinking>/gi, "").replace(/<redacted_reasoning>[\s\S]*?<\/redacted_reasoning>/gi, "");
+  }
+  function getBaseStatData() {
+    try {
+      const lastId = getLastMessageId();
+      const asst = getChatMessages(lastId, { role: "assistant" });
+      if (asst && asst.length > 0 && asst[0].data?.stat_data) return asst[0].data.stat_data;
+    } catch (e) {
+      console.warn("\u26A0\uFE0F [requestHandler] \u53D6\u57FA\u7840stat\u5931\u8D25", e);
+    }
+    try {
+      const md = Mvu.getMvuData?.({ type: "message", message_id: "latest" });
+      if (md?.stat_data) return md.stat_data;
+    } catch (e) {
+    }
+    return null;
+  }
+  async function handleUnifiedRequest(req, cb) {
+    if (isRequesting) {
+      console.warn("\u26A0\uFE0F [requestHandler] \u6B63\u5728\u8BF7\u6C42\u4E2D\uFF0C\u5FFD\u7565");
+      return false;
+    }
+    isRequesting = true;
+    cb?.onDisableOptions?.();
+    cb?.onShowGenerating?.();
+    let streamListener = null;
+    try {
+      await waitGlobalInitialized("Mvu");
+      const baseStat = getBaseStatData();
+      await createChatMessages([{
+        role: "user",
+        message: req.content,
+        data: baseStat ? { stat_data: baseStat } : void 0
+      }], { insert_before: "end", refresh: "none" });
+      const userId = getLastMessageId();
+      console.log("\u{1F4E4} [requestHandler] user\u6D88\u606F\u5DF2\u5EFA id=", userId);
+      if (cb?.onStreamingUpdate) {
+        const onStream = (text) => {
+          try {
+            cb.onStreamingUpdate?.(stripThinking(text));
+          } catch {
+          }
+        };
+        streamListener = eventOn(iframe_events.STREAM_TOKEN_RECEIVED_FULLY, onStream);
+      }
+      const result = await generate({ user_input: req.content, should_stream: true });
+      let finalText = stripThinking(result || "");
+      console.log("\u{1F4E5} [requestHandler] \u751F\u6210\u5B8C\u6210\uFF0C\u957F\u5EA6=", finalText.length);
+      if (streamListener) {
+        try {
+          streamListener.stop();
+        } catch {
+        }
+        streamListener = null;
+      }
+      if (!/<maintext>/i.test(finalText)) {
+        finalText = "<maintext>" + finalText + "</maintext>";
+      }
+      let newStat = baseStat ? JSON.parse(JSON.stringify(baseStat)) : null;
+      try {
+        if (newStat) {
+          const parsed = await Mvu.parseMessage?.(finalText, { stat_data: newStat, initialized_lorebooks: {} });
+          if (parsed?.stat_data) newStat = parsed.stat_data;
+        }
+      } catch (e) {
+        console.warn("\u26A0\uFE0F [requestHandler] \u53D8\u91CF\u89E3\u6790\u5931\u8D25\uFF0C\u7528\u539Fstat", e);
+      }
+      await createChatMessages([{
+        role: "assistant",
+        message: finalText,
+        data: newStat ? { stat_data: newStat } : void 0,
+        name: "\u300A\u6E38\u620F\u300B"
+      }], { insert_before: "end", refresh: "none" });
+      console.log("\u2705 [requestHandler] assistant\u6D88\u606F\u5DF2\u5EFA");
+      cb?.onHideGenerating?.();
+      await cb?.onRefreshStory?.();
+      cb?.onEnableOptions?.();
+      return true;
+    } catch (e) {
+      console.error("\u274C [requestHandler] \u8BF7\u6C42\u5931\u8D25:", e);
+      if (streamListener) {
+        try {
+          streamListener.stop();
+        } catch {
+        }
+      }
+      cb?.onHideGenerating?.();
+      cb?.onEnableOptions?.();
+      cb?.onError?.(String(e?.message || e));
+      return false;
+    } finally {
+      isRequesting = false;
+    }
+  }
+  async function rerollCurrent(cb) {
+    try {
+      const lastId = getLastMessageId();
+      const asst = getChatMessages(lastId, { role: "assistant" });
+      if (!asst || asst.length === 0) {
+        cb?.onError?.("\u627E\u4E0D\u5230\u5F53\u524D\u6D88\u606F");
+        return false;
+      }
+      const userMsgs = getChatMessages(asst[0].message_id - 1, { role: "user" });
+      if (!userMsgs || userMsgs.length === 0) {
+        cb?.onError?.("\u627E\u4E0D\u5230\u5BF9\u5E94\u7528\u6237\u6D88\u606F");
+        return false;
+      }
+      return handleUnifiedRequest({ type: "custom", content: userMsgs[0].message }, cb);
+    } catch (e) {
+      cb?.onError?.(String(e?.message || e));
+      return false;
+    }
+  }
+
+  // src/全息网游模拟器/components/GameScreen.tsx
+  var isRefreshing = false;
+  var optionsDisabled = false;
+  var currentData = null;
+  var eventStops = [];
+  function initGameScreen(root) {
+    renderShell(root);
+    bindEvents();
+    refreshGameScreen();
+  }
+  async function refreshGameScreen() {
+    if (isRefreshing) return;
+    isRefreshing = true;
+    try {
+      const root = document.getElementById("app");
+      if (!root) return;
+      const data = await readGameData();
+      currentData = data;
+      const msg = loadFromLatestMessage();
+      renderStory(root, msg.maintext, msg.options);
+      if (data) renderStatusBar(root, data);
+      console.log("\u{1F504} [GameScreen] \u5237\u65B0\u5B8C\u6210, \u56DE\u5408=", data?.\u4E16\u754C.\u7B2C\u51E0\u56DE\u5408);
+    } catch (e) {
+      console.error("\u274C [GameScreen] \u5237\u65B0\u5931\u8D25", e);
+    } finally {
+      isRefreshing = false;
+    }
+  }
+  function renderShell(root) {
+    root.innerHTML = `
+  <div class="game-wrap">
+    <button class="fullscreen-btn" id="btn-fullscreen" title="\u5168\u5C4F">\u2922</button>
+    <div class="game-layout">
+      <main class="game-main">
+        <div class="game-header">
+          <span class="game-title" id="game-title">\u5168\u606F\u7F51\u6E38\u6A21\u62DF\u5668</span>
+          <span class="turn-info" id="turn-info"></span>
+        </div>
+        <div class="story-area" id="story-area">
+          <div class="loading">\u6B63\u5728\u8F7D\u5165\u5267\u60C5...</div>
+        </div>
+        <div class="options-area" id="options-area"></div>
+        <div class="generating" id="generating" style="display:none;">
+          <div class="gen-dot"></div><div class="gen-dot"></div><div class="gen-dot"></div>
+          <span>\u6B63\u5728\u751F\u6210...</span>
+        </div>
+        <div class="input-area">
+          <input type="text" id="custom-input" placeholder="\u81EA\u5B9A\u4E49\u884C\u52A8..." />
+          <button id="btn-send" class="send-btn">\u53D1\u9001</button>
+        </div>
+      </main>
+      <aside class="status-sidebar" id="status-sidebar">
+        <div class="sidebar-loading">\u72B6\u6001\u8F7D\u5165\u4E2D...</div>
+      </aside>
+    </div>
+  </div>`;
+    bindShell(root);
+  }
+  function bindShell(root) {
+    const fsBtn = root.querySelector("#btn-fullscreen");
+    fsBtn.addEventListener("click", () => {
+      const doc = document;
+      const el = document.documentElement;
+      if (!doc.fullscreenElement) {
+        (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el);
+      } else {
+        (doc.exitFullscreen || doc.webkitExitFullscreen)?.call(doc);
+      }
+    });
+    const input = root.querySelector("#custom-input");
+    const sendBtn = root.querySelector("#btn-send");
+    const sendCustom = () => {
+      const text = input.value.trim();
+      if (!text || optionsDisabled) return;
+      input.value = "";
+      void handleUnifiedRequest({ type: "custom", content: text }, callbacks());
+    };
+    sendBtn.addEventListener("click", sendCustom);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendCustom();
+    });
+  }
+  function callbacks() {
+    return {
+      onDisableOptions: () => {
+        optionsDisabled = true;
+        updateOptionsDisabled();
+      },
+      onEnableOptions: () => {
+        optionsDisabled = false;
+        updateOptionsDisabled();
+      },
+      onShowGenerating: () => {
+        const g = document.getElementById("generating");
+        if (g) g.style.display = "flex";
+      },
+      onHideGenerating: () => {
+        const g = document.getElementById("generating");
+        if (g) g.style.display = "none";
+      },
+      onStreamingUpdate: (text) => {
+        const sa = document.getElementById("story-area");
+        if (sa) sa.innerHTML = `<div class="maintext streaming">${escapeHtml(text)}</div>`;
+      },
+      onError: (err) => {
+        console.error("\u8BF7\u6C42\u9519\u8BEF", err);
+      },
+      onRefreshStory: async () => {
+        await refreshGameScreen();
+      }
+    };
+  }
+  function renderStory(root, maintext, options) {
+    const sa = root.querySelector("#story-area");
+    if (maintext) {
+      sa.innerHTML = `<div class="maintext">${formatMaintext(maintext)}</div>`;
+      bindLongPress(sa);
+    } else {
+      sa.innerHTML = `<div class="loading">\u6682\u65E0\u5267\u60C5\uFF0C\u8BF7\u53D1\u9001\u6D88\u606F\u6216\u9009\u62E9\u9009\u9879</div>`;
+    }
+    const oa = root.querySelector("#options-area");
+    if (options && options.length > 0) {
+      oa.innerHTML = options.map(
+        (o, i) => `<button class="option-btn${optionsDisabled ? " disabled" : ""}" data-idx="${i}" data-text="${escapeAttr(o.text)}" ${optionsDisabled ? "disabled" : ""}><span class="opt-id">${escapeHtml(o.id)}</span><span class="opt-text">${escapeHtml(o.text)}</span></button>`
+      ).join("");
+      oa.querySelectorAll(".option-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (optionsDisabled) return;
+          const text = btn.dataset.text || "";
+          void handleUnifiedRequest({ type: "option", content: text }, callbacks());
+        });
+      });
+    } else {
+      oa.innerHTML = "";
+    }
+    const ti = root.querySelector("#turn-info");
+    if (currentData) {
+      ti.textContent = `\u7B2C${currentData.\u4E16\u754C.\u7B2C\u51E0\u56DE\u5408}\u56DE\u5408 \xB7 ${currentData.\u4E16\u754C.\u56DE\u5408\u7C7B\u578B}`;
+      const gt = root.querySelector("#game-title");
+      gt.textContent = `\u300A${currentData.\u6E38\u620F\u540D\u79F0}\u300B\xB7 ${currentData.\u6E38\u620F\u9898\u6750}`;
+    }
+  }
+  function updateOptionsDisabled() {
+    document.querySelectorAll(".option-btn").forEach((b) => {
+      b.classList.toggle("disabled", optionsDisabled);
+      b.disabled = optionsDisabled;
+    });
+  }
+  function bindLongPress(sa) {
+    const maintext = sa.querySelector(".maintext");
+    if (!maintext) return;
+    let timer = null;
+    const start = (e) => {
+      timer = window.setTimeout(() => {
+        e.preventDefault();
+        if (confirm("\u91CD roll \u5F53\u524D\u5267\u60C5\uFF1F")) void rerollCurrent(callbacks());
+      }, 500);
+    };
+    const cancel = () => {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+    };
+    maintext.addEventListener("mousedown", start);
+    maintext.addEventListener("mouseup", cancel);
+    maintext.addEventListener("mouseleave", cancel);
+    maintext.addEventListener("touchstart", start);
+    maintext.addEventListener("touchend", cancel);
+  }
+  function renderStatusBar(root, d) {
+    const sb = root.querySelector("#status-sidebar");
+    const role = d.\u5F53\u524D\u89D2\u8272;
+    const interact = d.\u5F53\u524D\u4E92\u52A8;
+    const social = d.\u793E\u4EA4;
+    const loveBar = Math.max(0, Math.min(100, interact.\u597D\u611F\u5EA6));
+    sb.innerHTML = `
+    <div class="sb-section">
+      <div class="sb-title">\u25C8 \u4E16\u754C</div>
+      <div class="sb-row"><span>\u65F6\u95F4</span><b>${escapeHtml(d.\u4E16\u754C.\u5F53\u524D\u65F6\u95F4)}</b></div>
+      <div class="sb-row"><span>\u5730\u70B9</span><b>${escapeHtml(d.\u4E16\u754C.\u5F53\u524D\u5730\u70B9)}</b></div>
+      <div class="sb-row"><span>\u56DE\u5408</span><b>\u7B2C${d.\u4E16\u754C.\u7B2C\u51E0\u56DE\u5408}\u56DE\u5408 \xB7 ${escapeHtml(d.\u4E16\u754C.\u56DE\u5408\u7C7B\u578B)} (${d.\u4E16\u754C.\u5DF2\u8F93\u51FA\u6B21\u6570}/10)</b></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-title">\u25C8 \u4E3B\u63A7</div>
+      <div class="sb-row"><span>\u59D3\u540D</span><b>${escapeHtml(d.\u4E3B\u63A7.\u73B0\u5B9E\u59D3\u540D)}</b></div>
+      <div class="sb-row"><span>\u8EAB\u4EFD</span><b>${escapeHtml(d.\u4E3B\u63A7.\u73B0\u5B9E\u8EAB\u4EFD)}</b></div>
+      <div class="sb-row"><span>\u8D44\u91D1</span><b>${d.\u4E3B\u63A7.\u73B0\u5B9E\u8D44\u91D1}</b></div>
+      <div class="sb-row"><span>\u6027\u5411</span><b>${escapeHtml(d.\u4E3B\u63A7.\u6027\u522B)} \xB7 ${escapeHtml(d.\u4E3B\u63A7.\u6027\u53D6\u5411)} \xB7 ${escapeHtml(d.\u4E3B\u63A7.\u4E0A\u4E0B\u4F4D)}</b></div>
+      <div class="sb-row"><span>\u5FC3\u60C5</span><b class="mood">${escapeHtml(d.\u4E3B\u63A7.\u5FC3\u60C5)}</b></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-title">\u25C8 \u89D2\u8272\u9762\u677F</div>
+      <div class="sb-row"><span>\u7F51\u540D</span><b>${escapeHtml(role.\u7F51\u540D)}</b></div>
+      <div class="sb-row"><span>\u7B49\u7EA7</span><b>Lv.${role.\u7B49\u7EA7} \xB7 ${escapeHtml(role.\u804C\u4E1A)}</b></div>
+      <div class="sb-row"><span>\u5E2E\u4F1A</span><b>${escapeHtml(role.\u5E2E\u4F1A)}</b></div>
+      <div class="sb-row"><span>\u6218\u529B</span><b>${role.\u6218\u529B\u8BC4\u5206} \xB7 ${escapeHtml(role.PVP\u6BB5\u4F4D)}</b></div>
+      <div class="sb-row"><span>\u8D27\u5E01</span><b>\u6E38\u620F\u5E01${role.\u6E38\u620F\u5E01} / \u5145\u503C${role.\u5145\u503C\u5E01}</b></div>
+      <div class="sb-row"><span>\u88C5\u5907</span><b>${escapeHtml(role.\u88C5\u5907)}</b></div>
+      <div class="sb-row"><span>\u65F6\u88C5</span><b>${escapeHtml(role.\u65F6\u88C5)}</b></div>
+      <div class="sb-row"><span>\u5728\u7EBF</span><b>${role.\u662F\u5426\u5728\u7EBF ? "\u{1F7E2} \u5728\u7EBF" : "\u26AB \u79BB\u7EBF"}</b></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-title">\u25C8 \u793E\u4EA4</div>
+      <div class="sb-row"><span>\u597D\u53CB</span><b>${social.\u597D\u53CB\u6570}</b></div>
+      <div class="sb-row"><span>\u5E08\u5F92</span><b>${escapeHtml(social.\u5E08\u5F92)}</b></div>
+      <div class="sb-row"><span>\u7ED3\u4E49</span><b>${escapeHtml(social.\u7ED3\u4E49)}</b></div>
+      <div class="sb-row"><span>\u60C5\u7F18</span><b>${escapeHtml(social.\u60C5\u7F18)}</b></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-title">\u25C8 \u5F53\u524D\u4E92\u52A8</div>
+      <div class="sb-row"><span>\u5BF9\u8C61</span><b>${escapeHtml(interact.\u89D2\u8272\u540D)}</b></div>
+      <div class="sb-row"><span>\u597D\u611F</span><b>${interact.\u597D\u611F\u5EA6} \xB7 ${escapeHtml(interact.\u597D\u611F\u9636\u6BB5)}</b></div>
+      <div class="love-bar"><div class="love-fill" style="width:${loveBar}%"></div></div>
+    </div>
+    ${d.\u53EF\u653B\u7565\u89D2\u8272.length > 0 ? `
+    <div class="sb-section">
+      <div class="sb-title">\u25C8 \u53EF\u653B\u7565\u89D2\u8272</div>
+      ${d.\u53EF\u653B\u7565\u89D2\u8272.map((c) => `
+        <div class="npc-card">
+          <div class="npc-head"><b>${escapeHtml(c.\u7F51\u540D)}</b><span>${escapeHtml(c.\u6765\u6E90)}</span></div>
+          <div class="npc-sub">${escapeHtml(c.\u6027\u522B)} \xB7 ${escapeHtml(c.\u6027\u683C)}</div>
+          <div class="npc-love">\u597D\u611F ${c.\u597D\u611F\u5EA6} \xB7 ${escapeHtml(c.\u597D\u611F\u9636\u6BB5)}</div>
+          <div class="love-bar small"><div class="love-fill" style="width:${Math.max(0, Math.min(100, c.\u597D\u611F\u5EA6))}%"></div></div>
+        </div>`).join("")}
+    </div>` : ""}
+  `;
+  }
+  function bindEvents() {
+    eventStops.forEach((s) => {
+      try {
+        s();
+      } catch {
+      }
+    });
+    eventStops = [];
+    try {
+      eventStops.push(eventOn(tavern_events.MESSAGE_UPDATED, () => {
+        setTimeout(() => void refreshGameScreen(), 300);
+      }));
+      eventStops.push(eventOn(tavern_events.MESSAGE_RECEIVED, () => {
+        setTimeout(() => void refreshGameScreen(), 1e3);
+      }));
+      eventStops.push(eventOn(tavern_events.CHAT_CHANGED, () => {
+        setTimeout(() => void refreshGameScreen(), 500);
+      }));
+    } catch (e) {
+      console.warn("\u26A0\uFE0F [GameScreen] \u4E8B\u4EF6\u7ED1\u5B9A\u5931\u8D25", e);
+    }
+  }
+  function formatMaintext(text) {
+    return escapeHtml(text).replace(/\n/g, "<br>");
+  }
+  function escapeHtml(s) {
+    return String(s ?? "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+  }
+  function escapeAttr(s) {
+    return String(s ?? "").replace(/"/g, "&quot;");
+  }
+
+  // src/全息网游模拟器/App.tsx
+  function initOpeningForm(root, stage) {
+    if (stage === "game") {
+      initGameScreen(root);
+      return;
+    }
+    renderOpeningForm(root);
+  }
+  function renderOpeningForm(root) {
+    root.innerHTML = `
+  <div class="opening-wrap">
+    <div class="opening-card">
+      <div class="opening-logo">\u25C8 \u5168\u606F\u7F51\u6E38\u6A21\u62DF\u5668 \u25C8</div>
+      <div class="opening-sub">\u67B6\u7A7A\u73B0\u4EE3 \xB7 \u5168\u606FMMORPG \xB7 \u516C\u6D4B\u9996\u65E5</div>
+      <form id="opening-form" autocomplete="off">
+
+        <div class="form-section">
+          <div class="section-title">\u4E00\u3001\u5173\u4E8E\u4F60</div>
+
+          <div class="field">
+            <label>\u6027\u522B</label>
+            <div class="btn-group" data-name="\u6027\u522B">
+              <button type="button" class="opt-btn" data-val="\u7537">\u7537</button>
+              <button type="button" class="opt-btn" data-val="\u5973">\u5973</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>\u6027\u53D6\u5411\uFF08\u51B3\u5B9A\u53EF\u653B\u7565\u89D2\u8272\u6027\u522B\uFF09</label>
+            <div class="btn-group" data-name="\u6027\u53D6\u5411">
+              <button type="button" class="opt-btn" data-val="bl">BL\uFF08\u5168\u7537\uFF09</button>
+              <button type="button" class="opt-btn" data-val="gl">GL\uFF08\u5168\u5973\uFF09</button>
+              <button type="button" class="opt-btn" data-val="bg">BG\uFF08\u5F02\u6027\uFF09</button>
+              <button type="button" class="opt-btn" data-val="gb">GB\uFF08\u5F02\u6027\u53CD\u4F4D\uFF09</button>
+              <button type="button" class="opt-btn" data-val="\u5168\u80FD\u63A5\u53D7">\u5168\u80FD\u63A5\u53D7</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>\u4E0A\u4E0B\u4F4D\u503E\u5411\uFF08\u5F00\u5C40\u9501\u5B9A\uFF0C\u5F71\u54CD\u6240\u6709\u4E92\u52A8\uFF09</label>
+            <div class="btn-group" data-name="\u4E0A\u4E0B\u4F4D">
+              <button type="button" class="opt-btn" data-val="\u4E0A\u4F4D">\u4E0A\u4F4D\uFF08\u4E3B\u52A8\u5F3A\u52BF\uFF09</button>
+              <button type="button" class="opt-btn" data-val="\u4E0B\u4F4D">\u4E0B\u4F4D\uFF08\u88AB\u52A8\u7F9E\u6DA9\uFF09</button>
+              <button type="button" class="opt-btn" data-val="\u89C6\u60C5\u51B5\u7686\u53EF">\u89C6\u60C5\u51B5\u7686\u53EF</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>\u59D3\u540D\uFF08\u7559\u7A7A\u968F\u673A\uFF09</label>
+            <input type="text" id="f-name" placeholder="\u73B0\u4EE3\u5C0F\u4F17\u540D\u5B57" />
+          </div>
+
+          <div class="field">
+            <label>\u5E74\u9F84\uFF08\u7559\u7A7A\u968F\u673A\uFF09</label>
+            <input type="number" id="f-age" placeholder="16-28" min="14" max="40" />
+          </div>
+
+          <div class="field">
+            <label>\u73B0\u5B9E\u8EAB\u4EFD\uFF08\u7559\u7A7A\u968F\u673A\uFF09</label>
+            <input type="text" id="f-identity" placeholder="\u5982\uFF1A\u5927\u4E8C\u5B66\u751F / \u4E0A\u73ED\u65CF / \u5BCC\u4E8C\u4EE3" />
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="section-title">\u4E8C\u3001\u4F60\u7684\u6E38\u620F</div>
+
+          <div class="field">
+            <label>\u6E38\u620F\u9898\u6750</label>
+            <div class="btn-group" data-name="\u6E38\u620F\u9898\u6750">
+              <button type="button" class="opt-btn" data-val="\u897F\u5E7B">\u897F\u5E7B</button>
+              <button type="button" class="opt-btn" data-val="\u6B66\u4FA0">\u6B66\u4FA0</button>
+              <button type="button" class="opt-btn" data-val="\u672B\u4E16">\u672B\u4E16</button>
+              <button type="button" class="opt-btn" data-val="\u79D1\u5E7B">\u79D1\u5E7B</button>
+              <button type="button" class="opt-btn" data-val="\u968F\u673A">\u968F\u673A</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>\u6E38\u620F\u540D\u79F0\uFF08\u7559\u7A7A\u968F\u673A\uFF09</label>
+            <input type="text" id="f-game" placeholder="\u7F51\u6E38\u540D" />
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="section-title">\u4E09\u3001\u4F60\u7684\u89D2\u8272\uFF08\u6700\u591A3\u4E2A\uFF0C\u5148\u521B1\u4E2A\uFF09</div>
+
+          <div class="field">
+            <label>\u7F51\u540D\uFF08\u975E\u771F\u540D\uFF0C\u7559\u7A7A\u968F\u673A\uFF09</label>
+            <input type="text" id="f-netname" placeholder="\u72EC\u7279\u98CE\u683C\u3001\u4F1A\u73A9\u6897" />
+          </div>
+
+          <div class="field">
+            <label>\u804C\u4E1A\uFF08\u7559\u7A7A\u968F\u673A\uFF09</label>
+            <input type="text" id="f-job" placeholder="\u5982\uFF1A\u5251\u58EB / \u6CD5\u5E08 / \u523A\u5BA2 / \u6CBB\u7597\u8005" />
+          </div>
+
+          <div class="field">
+            <label>\u4E2A\u6027\u7B7E\u540D\uFF08\u7559\u7A7A\u968F\u673A\uFF09</label>
+            <input type="text" id="f-sig" placeholder="\u9AD8\u51B7 / \u51E1\u5C14\u8D5B / \u6C99\u96D5 / \u73A9\u6897" />
+          </div>
+        </div>
+
+        <div class="submit-row">
+          <button type="submit" id="opening-submit" class="submit-btn">\u27E1 \u8FDB\u5165\u6E38\u620F \u27E1</button>
+          <button type="button" id="opening-random" class="random-btn">\u5168\u90E8\u968F\u673A</button>
+        </div>
+        <div id="opening-status" class="opening-status"></div>
+      </form>
+    </div>
+  </div>`;
+    bindOpeningForm(root);
+  }
+  function bindBtnGroup(root) {
+    const selected = {};
+    root.querySelectorAll(".btn-group").forEach((grp) => {
+      const name = grp.dataset.name || "";
+      grp.querySelectorAll(".opt-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          grp.querySelectorAll(".opt-btn").forEach((b) => b.classList.remove("selected"));
+          btn.classList.add("selected");
+          selected[name] = btn.dataset.val || "";
+        });
+      });
+    });
+    return selected;
+  }
+  function bindOpeningForm(root) {
+    const selected = bindBtnGroup(root);
+    const statusEl = root.querySelector("#opening-status");
+    const randomBtn = root.querySelector("#opening-random");
+    randomBtn.addEventListener("click", () => {
+      randomFill(root, selected);
+    });
+    const form = root.querySelector("#opening-form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const data = collectForm(root, selected);
+      if (!data.\u6027\u522B || !data.\u6027\u53D6\u5411 || !data.\u4E0A\u4E0B\u4F4D || !data.\u6E38\u620F\u9898\u6750) {
+        statusEl.textContent = "\u26A0\uFE0F \u8BF7\u81F3\u5C11\u9009\u62E9 \u6027\u522B / \u6027\u53D6\u5411 / \u4E0A\u4E0B\u4F4D / \u6E38\u620F\u9898\u6750\uFF08\u6216\u70B9\u5168\u90E8\u968F\u673A\uFF09";
+        statusEl.classList.add("err");
+        return;
+      }
+      const submitBtn = root.querySelector("#opening-submit");
+      submitBtn.setAttribute("disabled", "disabled");
+      submitBtn.textContent = "\u6B63\u5728\u8FDB\u5165...";
+      statusEl.textContent = "\u23F3 \u6B63\u5728\u521B\u5EFA\u4F60\u7684\u4E16\u754C...";
+      statusEl.classList.remove("err");
+      const ok1 = await initializeGameVariables(data);
+      const ok2 = await createOpeningStoryMessage(data);
+      if (ok1 && ok2) {
+        statusEl.textContent = "\u2705 \u8FDB\u5165\u6E38\u620F\u4E2D...";
+        setTimeout(() => initGameScreen(root), 800);
+      } else {
+        statusEl.textContent = "\u274C \u521D\u59CB\u5316\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5";
+        statusEl.classList.add("err");
+        submitBtn.removeAttribute("disabled");
+        submitBtn.textContent = "\u27E1 \u8FDB\u5165\u6E38\u620F \u27E1";
+      }
+    });
+  }
+  function collectForm(root, selected) {
+    const get = (id) => (root.querySelector("#" + id)?.value || "").trim();
+    let \u6027\u522B = selected["\u6027\u522B"] || "";
+    let \u6027\u53D6\u5411 = selected["\u6027\u53D6\u5411"] || "";
+    let \u4E0A\u4E0B\u4F4D = selected["\u4E0A\u4E0B\u4F4D"] || "";
+    let \u6E38\u620F\u9898\u6750 = selected["\u6E38\u620F\u9898\u6750"] || "";
+    return {
+      \u6027\u522B,
+      \u6027\u53D6\u5411,
+      \u4E0A\u4E0B\u4F4D,
+      \u73B0\u5B9E\u59D3\u540D: get("f-name"),
+      \u5E74\u9F84: parseInt(get("f-age")) || 16 + Math.floor(Math.random() * 12),
+      \u73B0\u5B9E\u8EAB\u4EFD: get("f-identity"),
+      \u6E38\u620F\u9898\u6750,
+      \u6E38\u620F\u540D\u79F0: get("f-game"),
+      \u7F51\u540D: get("f-netname"),
+      \u804C\u4E1A: get("f-job"),
+      \u4E2A\u6027\u7B7E\u540D: get("f-sig")
+    };
+  }
+  var RANDOM_NAMES = ["\u6C88\u781A", "\u9646\u77E5\u590F", "\u987E\u5DDD", "\u6797\u662D", "\u82CF\u5C7F", "\u6C5F\u5E8F", "\u6E29\u91CE", "\u7941\u7720"];
+  var RANDOM_GAMES = ["\u661F\u9668\u7EAA\u5143", "\u4E5D\u9704", "\u5E9F\u571F\u9ECE\u660E", "\u5E7B\u754COnline", "\u6CA7\u6E9F\u5F55"];
+  var RANDOM_JOBS = ["\u5251\u58EB", "\u6CD5\u5E08", "\u523A\u5BA2", "\u5F13\u624B", "\u6CBB\u7597\u8005", "\u53EC\u5524\u5E08"];
+  var RANDOM_SIGS = ["\u4ECA\u5929\u4E5F\u662F\u60F3\u9000\u4F11\u7684\u4E00\u5929", "\u809D\u5E1D\u672C\u5E1D", "\u4E0D\u7EC4\u961F\uFF0C\u52FF\u6270", "\u5728\uFF1F\u770B\u770B\u4F60\u7684\u88C5\u5907", "\u4F5B\u7CFB\u73A9\u5BB6\uFF0C\u968F\u7F18\u7EC4\u672C"];
+  function randomFill(root, selected) {
+    const set = (id, v) => {
+      const el = root.querySelector("#" + id);
+      if (el) el.value = v;
+    };
+    const pickGroup = (name, val) => {
+      selected[name] = val;
+      root.querySelectorAll(`.btn-group[data-name="${name}"] .opt-btn`).forEach((b) => {
+        b.classList.toggle("selected", b.dataset.val === val);
+      });
+    };
+    pickGroup("\u6027\u522B", Math.random() > 0.5 ? "\u7537" : "\u5973");
+    pickGroup("\u6027\u53D6\u5411", ["bl", "gl", "bg", "gb", "\u5168\u80FD\u63A5\u53D7"][Math.floor(Math.random() * 5)]);
+    pickGroup("\u4E0A\u4E0B\u4F4D", ["\u4E0A\u4F4D", "\u4E0B\u4F4D", "\u89C6\u60C5\u51B5\u7686\u53EF"][Math.floor(Math.random() * 3)]);
+    pickGroup("\u6E38\u620F\u9898\u6750", ["\u897F\u5E7B", "\u6B66\u4FA0", "\u672B\u4E16", "\u79D1\u5E7B"][Math.floor(Math.random() * 4)]);
+    set("f-name", RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)]);
+    set("f-age", String(16 + Math.floor(Math.random() * 12)));
+    set("f-identity", ["\u5927\u4E8C\u5B66\u751F", "\u9AD8\u4E09\u5B66\u751F", "\u4E0A\u73ED\u65CF", "\u81EA\u7531\u804C\u4E1A", "\u5BCC\u4E8C\u4EE3"][Math.floor(Math.random() * 5)]);
+    set("f-game", RANDOM_GAMES[Math.floor(Math.random() * RANDOM_GAMES.length)]);
+    set("f-netname", "\u73A9\u5BB6" + Math.floor(Math.random() * 9e3 + 1e3));
+    set("f-job", RANDOM_JOBS[Math.floor(Math.random() * RANDOM_JOBS.length)]);
+    set("f-sig", RANDOM_SIGS[Math.floor(Math.random() * RANDOM_SIGS.length)]);
+  }
+
+  // src/全息网游模拟器/index.tsx
+  function boot() {
+    let stage = "opening";
+    try {
+      const lastId = getLastMessageId();
+      console.log("\u{1F680} [index] lastMessageId =", lastId);
+      if (lastId > 0) {
+        const m = getChatMessages(1);
+        if (m && m.length > 0 && m[0].message) stage = "game";
+        else stage = "opening";
+      } else {
+        stage = "opening";
+      }
+    } catch (e) {
+      console.error("\u274C [index] \u5224\u65AD\u9636\u6BB5\u5931\u8D25", e);
+      stage = "opening";
+    }
+    const root = document.getElementById("app");
+    if (!root) {
+      console.error("\u65E0 #app \u8282\u70B9");
+      return;
+    }
+    initOpeningForm(root, stage);
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+
+</script>
+</body>
+</html>
