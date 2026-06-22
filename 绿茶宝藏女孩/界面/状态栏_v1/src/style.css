@@ -1,0 +1,338 @@
+/* 绿茶宝藏女孩 · 状态栏 UI
+   主题：表面纯情少女（樱花粉）× 内里算计（墨绿茶汤）
+   签名元素：茶杯水位=真心度，品级茶标，鱼塘涟漪 */
+
+:root {
+  /* 调色盘：茶汤系 */
+  --tea-darkest: #0d1f17;        /* 深茶底 */
+  --tea-dark: #14281d;           /* 主背景 */
+  --tea-mid: #1d3a2a;            /* 卡片底 */
+  --tea-light: #2d5440;          /* 边框/分隔 */
+  --tea-foam: #c8e6c9;           /* 茶沫高光 */
+  --tea-glow: #7cc5a0;           /* 主强调（茶汤绿） */
+
+  /* 反差点：纯情少女粉 vs 算计墨绿 */
+  --sakura: #f4b6c2;             /* 樱花粉（纯情表象）*/
+  --sakura-soft: #f8d7dd;
+  --sakura-glow: #ff8fa3;        /* 真心度强调 */
+
+  /* 中性 */
+  --ink: #e8f0ea;                /* 主文字 */
+  --ink-dim: #8fa89a;            /* 次要文字 */
+  --ink-faint: #5a7268;           /* 弱化文字 */
+  --gold: #d4a574;                /* 品级/B级卡 */
+  --warn: #e07a5f;                /* 翻车/警告 */
+  --shadow: 0 8px 32px rgba(0,0,0,.45);
+
+  /* 字体 */
+  --font-display: "Noto Serif SC", "Source Han Serif SC", "Songti SC", serif;
+  --font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "Consolas", monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  background: linear-gradient(160deg, var(--tea-darkest) 0%, var(--tea-dark) 60%, var(--tea-mid) 100%);
+  color: var(--ink);
+  min-height: 480px;
+  padding: 14px 16px 18px;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: 0.01em;
+  line-height: 1.55;
+  overflow-x: hidden;
+}
+
+/* 整体容器 */
+.status-root {
+  max-width: 640px;
+  margin: 0 auto;
+  font-size: 13.5px;
+}
+
+/* ===== 顶部主卡：茶杯签名区 ===== */
+.hero {
+  position: relative;
+  background: linear-gradient(135deg, rgba(29,58,42,.9), rgba(20,40,29,.95));
+  border: 1px solid var(--tea-light);
+  border-radius: 14px;
+  padding: 16px 18px 14px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.hero::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 88% 12%, rgba(124,197,160,.14), transparent 45%),
+              radial-gradient(circle at 10% 90%, rgba(244,182,194,.08), transparent 40%);
+  pointer-events: none;
+}
+.hero-row { display: flex; align-items: center; gap: 14px; position: relative; }
+
+/* 茶杯签名 SVG 容器 */
+.tea-cup {
+  width: 64px; height: 64px;
+  flex-shrink: 0;
+  position: relative;
+}
+.tea-cup svg { width: 100%; height: 100%; }
+.cup-water {
+  transition: y .8s cubic-bezier(.4,0,.2,1), height .8s cubic-bezier(.4,0,.2,1);
+}
+.cup-leaf { animation: float-leaf 4s ease-in-out infinite; transform-origin: center; }
+@keyframes float-leaf {
+  0%,100% { transform: rotate(-8deg) translateX(-2px); }
+  50% { transform: rotate(10deg) translateX(2px); }
+}
+
+.hero-text { flex: 1; min-width: 0; }
+.hero-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  margin-bottom: 4px;
+  text-shadow: 0 2px 12px rgba(124,197,160,.25);
+}
+.hero-name .grade-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  background: rgba(212,165,116,.12);
+  border: 1px solid rgba(212,165,116,.4);
+  border-radius: 4px;
+  padding: 2px 7px;
+  margin-left: 8px;
+  vertical-align: middle;
+  font-weight: 700;
+}
+.hero-stage {
+  font-size: 12px;
+  color: var(--ink-dim);
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.hero-stage span { display: inline-flex; align-items: center; gap: 4px; }
+.hero-stage .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--tea-glow); }
+.hero-stage .dot.sakura { background: var(--sakura-glow); }
+
+/* 真心度进度条（核心指标） */
+.heart-meter {
+  position: relative;
+  margin-top: 14px;
+  height: 22px;
+  background: rgba(0,0,0,.25);
+  border-radius: 11px;
+  overflow: hidden;
+  border: 1px solid rgba(255,143,163,.18);
+}
+.heart-fill {
+  position: absolute; top: 0; left: 0; bottom: 0;
+  width: 0%;
+  background: linear-gradient(90deg, var(--sakura-soft) 0%, var(--sakura-glow) 70%, var(--sakura) 100%);
+  border-radius: 11px;
+  transition: width 1s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 0 14px rgba(255,143,163,.5);
+}
+.heart-fill::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent);
+  animation: shimmer 2.4s infinite;
+}
+@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+.heart-label {
+  position: absolute; inset: 0;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink);
+  z-index: 1;
+}
+.heart-label .lh { color: var(--sakura-soft); text-shadow: 0 1px 4px rgba(0,0,0,.6); }
+.heart-label .rh { color: var(--ink); font-weight: 700; }
+
+/* ===== 折叠区头 ===== */
+.collapsible {
+  margin-top: 12px;
+  background: rgba(20,40,29,.5);
+  border: 1px solid var(--tea-light);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color .3s;
+}
+.collapsible.open { border-color: var(--tea-glow); }
+.collap-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: background .2s;
+}
+.collap-head:hover { background: rgba(124,197,160,.06); }
+.collap-head h2 {
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--tea-foam);
+  letter-spacing: 0.06em;
+  display: flex; align-items: center; gap: 8px;
+}
+.collap-head h2 .idx {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  font-weight: 400;
+}
+.collap-head .chev {
+  width: 14px; height: 14px;
+  border-right: 2px solid var(--ink-dim);
+  border-bottom: 2px solid var(--ink-dim);
+  transform: rotate(45deg);
+  transition: transform .3s;
+  margin-bottom: 4px;
+}
+.collapsible.open .chev { transform: rotate(-135deg); margin-bottom: -4px; }
+.collap-body {
+  max-height: 0; overflow: hidden;
+  transition: max-height .35s ease;
+}
+.collapsible.open .collap-body { max-height: 900px; }
+
+/* 字段网格 */
+.fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--tea-light);
+  border-top: 1px solid var(--tea-light);
+}
+.field {
+  background: rgba(13,31,23,.4);
+  padding: 9px 14px;
+  display: flex; flex-direction: column; gap: 3px;
+  min-height: 44px;
+}
+.field.full { grid-column: 1 / -1; }
+.field .k {
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+.field .v {
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.field .v.sakura { color: var(--sakura-glow); }
+.field .v.warn { color: var(--warn); }
+.field .v.good { color: var(--tea-glow); }
+.field .v.mono { font-family: var(--font-mono); font-weight: 600; }
+
+/* 鱼塘状态可视化 */
+.pond-viz {
+  display: flex; gap: 5px; align-items: center; margin-top: 3px;
+}
+.fish-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--tea-glow);
+  opacity: .3;
+  transition: all .4s;
+}
+.fish-dot.alive { opacity: 1; box-shadow: 0 0 6px var(--tea-glow); }
+.fish-dot.gone { background: var(--warn); opacity: .4; }
+
+/* 心理活动引言 */
+.quote {
+  grid-column: 1 / -1;
+  background: linear-gradient(90deg, rgba(244,182,194,.08), rgba(124,197,160,.06));
+  border-top: 1px solid rgba(244,182,194,.2);
+  padding: 12px 16px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--sakura-soft);
+  line-height: 1.6;
+  position: relative;
+}
+.quote::before {
+  content: "「";
+  position: absolute; left: 4px; top: 8px;
+  font-size: 22px; color: var(--sakura); opacity: .4;
+}
+.quote .qtext { padding-left: 18px; }
+
+/* 章节阶段时间线 */
+.timeline {
+  padding: 12px 14px;
+  display: flex; gap: 4px; align-items: flex-start;
+  border-top: 1px solid var(--tea-light);
+  overflow-x: auto;
+}
+.tl-node {
+  flex: 1; min-width: 0;
+  text-align: center;
+  font-size: 10px;
+  color: var(--ink-faint);
+  padding: 6px 2px;
+  border-radius: 6px;
+  position: relative;
+  transition: all .3s;
+}
+.tl-node .tl-mark {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--tea-light);
+  margin: 0 auto 5px;
+  border: 1.5px solid var(--ink-faint);
+  transition: all .3s;
+}
+.tl-node.active { color: var(--sakura-glow); }
+.tl-node.active .tl-mark {
+  background: var(--sakura-glow);
+  border-color: var(--sakura-glow);
+  box-shadow: 0 0 10px var(--sakura-glow);
+}
+.tl-node.passed .tl-mark { background: var(--tea-glow); border-color: var(--tea-glow); }
+.tl-node .tl-label {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 9.5px; letter-spacing: 0.02em;
+}
+
+/* 空态 */
+.empty {
+  padding: 40px 20px; text-align: center;
+  color: var(--ink-faint); font-size: 12px;
+}
+.empty .teapot { font-size: 36px; margin-bottom: 8px; opacity: .4; }
+
+/* 底部署名 */
+.foot {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--ink-faint);
+  letter-spacing: 0.15em;
+  font-family: var(--font-mono);
+}
+.foot .sep { color: var(--tea-light); margin: 0 6px; }
+
+/* 响应式：窄窗单列 */
+@media (max-width: 480px) {
+  .fields { grid-template-columns: 1fr; }
+  .hero-name { font-size: 19px; }
+  body { padding: 10px 12px 14px; font-size: 12.5px; }
+}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .heart-fill::after, .cup-leaf { animation: none; }
+  * { transition-duration: .01ms !important; }
+}
