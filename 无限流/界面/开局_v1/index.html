@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Space+Mono&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg-deep:#06060d;
+  --bg-card:rgba(14,14,26,0.92);
+  --glass:rgba(255,255,255,0.03);
+  --glass2:rgba(255,255,255,0.06);
+  --border:rgba(255,255,255,0.1);
+  --text-primary:#e8e6f0;
+  --text-secondary:#9895b0;
+  --text-dim:#5e5b75;
+  --accent:#00d4ff;
+  --accent2:#a78bfa;
+  --danger:#f87171;
+  --success:#4ade80;
+}
+
+body{
+  font-family:'Noto Sans SC','Microsoft YaHei',sans-serif;
+  background:transparent;
+  color:var(--text-primary);
+  font-size:13px;
+  line-height:1.5;
+  overflow:hidden;
+}
+
+.wrap{
+  max-width:440px;
+  margin:0 auto;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  box-shadow:0 12px 48px rgba(0,0,0,0.5), inset 0 1px 0 var(--glass);
+  overflow:hidden;
+  max-height:620px;
+  display:flex;
+  flex-direction:column;
+}
+
+.header{
+  padding:14px 18px;
+  background:linear-gradient(180deg, var(--glass2), transparent);
+  border-bottom:1px solid var(--border);
+  text-align:center;
+  flex-shrink:0;
+}
+.header h1{
+  font-size:16px;
+  font-weight:500;
+  letter-spacing:1px;
+  color:var(--accent);
+}
+.header p{
+  font-size:10px;
+  color:var(--text-dim);
+  margin-top:2px;
+}
+
+.steps{
+  display:flex;
+  justify-content:center;
+  gap:6px;
+  padding:8px 0;
+  flex-shrink:0;
+}
+.step-dot{
+  width:8px;height:8px;
+  border-radius:50%;
+  background:var(--border);
+  transition:all .3s;
+}
+.step-dot.active{background:var(--accent);box-shadow:0 0 8px rgba(0,212,255,0.5)}
+.step-dot.done{background:var(--accent2)}
+
+.body{
+  flex:1;
+  overflow-y:auto;
+  padding:12px 18px;
+  display:flex;flex-direction:column;gap:10px;
+}
+
+.field{display:flex;flex-direction:column;gap:3px}
+.field label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.8px}
+.field input,.field select,.field textarea{
+  background:var(--glass);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:7px 10px;
+  color:var(--text-primary);
+  font-size:12px;
+  font-family:inherit;
+  outline:none;
+  transition:border .2s;
+  resize:vertical;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+.field textarea{min-height:50px}
+.field select{appearance:none;cursor:pointer}
+.field select option{background:#1a1a2e;color:#e8e6f0}
+
+.radio-group{display:flex;flex-wrap:wrap;gap:5px}
+.radio-btn{
+  padding:6px 12px;
+  border:1px solid var(--border);
+  border-radius:6px;
+  background:var(--glass);
+  cursor:pointer;
+  font-size:11px;
+  color:var(--text-secondary);
+  transition:all .2s;
+  user-select:none;
+}
+.radio-btn:hover{border-color:var(--accent2);color:var(--text-primary)}
+.radio-btn.selected{border-color:var(--accent);background:rgba(0,212,255,0.1);color:var(--accent)}
+
+.attr-table{display:flex;flex-direction:column;gap:5px}
+.attr-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:5px 8px;
+  background:var(--glass);
+  border-radius:6px;
+  border:1px solid transparent;
+  transition:border .2s;
+}
+.attr-row:hover{border-color:var(--border)}
+.attr-row .aname{width:32px;font-size:11px;color:var(--text-primary);font-weight:500}
+.attr-row .adesc{font-size:9px;color:var(--text-dim);width:60px;flex-shrink:0}
+.attr-row .aval{width:28px;text-align:center;font-family:'Space Mono',monospace;color:var(--accent);font-weight:600;font-size:14px}
+.attr-row button{
+  width:24px;height:24px;
+  border-radius:50%;
+  border:1px solid var(--border);
+  background:var(--glass2);
+  color:var(--text-secondary);
+  cursor:pointer;
+  font-size:14px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s;
+  line-height:1;
+}
+.attr-row button:hover{background:var(--accent);color:#000;border-color:var(--accent)}
+.attr-row button:disabled{opacity:.3;cursor:default}
+
+.points-left{
+  text-align:center;
+  font-size:12px;
+  color:var(--accent2);
+  font-weight:600;
+  padding:4px;
+}
+
+.toggle-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:5px 8px;
+  background:var(--glass);
+  border-radius:6px;
+}
+.toggle-row .tl{font-size:11px;color:var(--text-secondary)}
+.toggle-row .ts{font-size:9px;color:var(--text-dim)}
+.toggle{
+  width:36px;height:20px;
+  border-radius:10px;
+  background:var(--border);
+  cursor:pointer;
+  position:relative;
+  transition:background .3s;
+}
+.toggle.on{background:var(--accent)}
+.toggle::after{
+  content:'';
+  position:absolute;top:2px;left:2px;
+  width:16px;height:16px;
+  border-radius:50%;
+  background:#fff;
+  transition:left .3s;
+}
+.toggle.on::after{left:18px}
+
+.footer{
+  padding:10px 18px;
+  border-top:1px solid var(--border);
+  display:flex;
+  gap:8px;
+  justify-content:flex-end;
+  flex-shrink:0;
+  background:var(--glass);
+}
+.footer button{
+  padding:8px 18px;
+  border-radius:7px;
+  border:none;
+  cursor:pointer;
+  font-size:12px;
+  font-family:inherit;
+  font-weight:500;
+  transition:all .2s;
+}
+.btn-back{background:var(--glass2);color:var(--text-secondary)}
+.btn-back:hover{background:var(--border)}
+.btn-next{background:var(--accent);color:#000}
+.btn-next:hover{box-shadow:0 0 16px rgba(0,212,255,0.4)}
+
+.submitted-msg{
+  text-align:center;
+  padding:40px 20px;
+  color:var(--success);
+  font-size:14px;
+}
+.submitted-msg .icon{font-size:32px;margin-bottom:12px}
+
+.hint{font-size:10px;color:var(--text-dim);line-height:1.6;padding:8px;background:var(--glass);border-radius:6px}
+
+#random-talent-options{margin-top:6px;padding:8px;background:var(--glass);border-radius:6px;border:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="header">
+    <h1>⚡ 适格者初始化</h1>
+    <p>无限流世界·人物创建</p>
+  </div>
+  <div class="steps">
+    <div class="step-dot active" id="dot0"></div>
+    <div class="step-dot" id="dot1"></div>
+    <div class="step-dot" id="dot2"></div>
+    <div class="step-dot" id="dot3"></div>
+    <div class="step-dot" id="dot4"></div>
+  </div>
+  <div class="body" id="step-body"></div>
+  <div class="footer" id="step-footer"></div>
+</div>
+
+<script>
+var step = 0;
+var totalSteps = 5;
+
+var data = {
+  姓名:'',性别:'',年龄:'25',外貌性格:'',
+  天赋模式:'手动指定',天赋手动:'',天赋随机数:'3',天赋方向:'全随机',
+  模式:'单人冒险',
+  锚点:'主神空间',锚点自定义:'',
+  力量:5,敏捷:5,体质:5,精神:5,智力:5,魅力:5,
+  积分系统:true,积分初始:'0',
+  商城系统:true,商城方向:'',
+  任务系统:true,主线长度:'长',随机任务:true
+};
+
+function setDots(n){
+  for(var i=0;i<totalSteps;i++){
+    var d = document.getElementById('dot'+i);
+    d.className = 'step-dot' + (i < n ? ' done' : '') + (i === n ? ' active' : '');
+  }
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function radioGrp(name,options,val,onchange){
+  var h = '<div class="radio-group">';
+  for(var i=0;i<options.length;i++){
+    var o = options[i];
+    h += '<div class="radio-btn'+(val===o?' selected':'')+'" data-val="'+esc(o)+'" onclick="var p=this.parentNode;for(var j=0;j<p.children.length;j++)p.children[j].classList.remove(\'selected\');this.classList.add(\'selected\');'+onchange+'">'+esc(o)+'</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+function radioGrp2(name,options,val,onchange){
+  var h = '<div class="radio-group">';
+  for(var i=0;i<options.length;i++){
+    var o = options[i];
+    h += '<div class="radio-btn'+(val===o.v?' selected':'')+'" data-val="'+esc(o.v)+'" onclick="var p=this.parentNode;for(var j=0;j<p.children.length;j++)p.children[j].classList.remove(\'selected\');this.classList.add(\'selected\');'+onchange+'">'+esc(o.l)+'</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+function renderStep0(){
+  var h = '';
+  h += '<div class="field"><label>姓名</label><input id="f-name" value="'+esc(data.姓名)+'" onchange="data.姓名=this.value" placeholder="你的名字"></div>';
+  h += '<div class="field"><label>性别</label>'+radioGrp('性别',['男','女'],data.性别,'data.性别=this.dataset.val')+'</div>';
+  h += '<div class="field"><label>年龄</label><input id="f-age" type="number" value="'+esc(data.年龄)+'" onchange="data.年龄=this.value" min="12" max="99"></div>';
+  h += '<div class="field"><label>外貌与性格</label><textarea id="f-app" onchange="data.外貌性格=this.value" placeholder="描述你的体貌特征、性格倾向和行为模式...">'+esc(data.外貌性格)+'</textarea></div>';
+  return h;
+}
+
+function renderStep1(){
+  var h = '';
+  h += '<div class="field"><label>天赋选择</label>';
+  h += radioGrp('天赋模式',['手动指定','随机抽取','不要天赋'],data.天赋模式,
+    'data.天赋模式=this.dataset.val;renderCurrentStep()');
+  h += '</div>';
+
+  if(data.天赋模式==='手动指定'){
+    h += '<div class="field" style="margin-top:6px"><label>天赋描述（可多个，换行分隔）</label><textarea onchange="data.天赋手动=this.value" placeholder="例：&#10;死亡回溯[稀有]: 死亡后以30%HP回到5分钟前，每日限1次&#10;武器大师[优秀]: 所有近战武器伤害+15%">'+esc(data.天赋手动)+'</textarea></div>';
+  }else if(data.天赋模式==='随机抽取'){
+    h += '<div class="field" style="margin-top:6px"><label>随机数量</label>';
+    h += radioGrp('随机数',['1','2','3','4','5'],data.天赋随机数,'data.天赋随机数=this.dataset.val');
+    h += '</div>';
+    h += '<div class="field" style="margin-top:6px"><label>天赋方向</label>';
+    h += radioGrp('方向',['全随机','战斗类','生存类','感知类','操控类','辅助类','特殊类'],data.天赋方向,'data.天赋方向=this.dataset.val');
+    h += '</div>';
+  }else{
+    h += '<div class="hint">不开天赋，纯靠自身实力闯关。挑战更大，但成长空间也更大。</div>';
+  }
+  return h;
+}
+
+function renderStep2(){
+  var h = '';
+  h += '<div class="field"><label>冒险模式</label>';
+  h += radioGrp2('模式',[
+    {l:'单人冒险 - 一个人的战斗',v:'单人冒险'},
+    {l:'多人冒险 - 有NPC队友同行',v:'多人冒险'},
+    {l:'单人多人空间 - 单人但可组队',v:'单人多人空间'},
+  ],data.模式,'data.模式=this.dataset.val');
+  h += '</div>';
+
+  h += '<div class="field" style="margin-top:6px"><label>锚点空间</label>';
+  h += radioGrp2('锚点',[
+    {l:'主神空间 - 大光球+个人房间',v:'主神空间'},
+    {l:'乐园空间 - 个人乐园+主题公园',v:'乐园空间'},
+    {l:'直连世界 - 副本连副本',v:'直连世界'},
+    {l:'地球都市 - 现实中的副本入口',v:'地球都市'},
+    {l:'自定义',v:'自定义'},
+  ],data.锚点,'data.锚点=this.dataset.val;renderCurrentStep()');
+  h += '</div>';
+  if(data.锚点==='自定义'){
+    h += '<div class="field" style="margin-top:4px"><input value="'+esc(data.锚点自定义)+'" onchange="data.锚点自定义=this.value" placeholder="描述你想要的锚点空间设定..."></div>';
+  }
+  return h;
+}
+
+function renderStep3(){
+  var total = data.力量+data.敏捷+data.体质+data.精神+data.智力+data.魅力;
+  var left = 35 - total;
+  var h = '';
+  h += '<div class="hint">你有 <b style="color:#00d4ff">30点</b> 自由属性点。六维初始均为5（普通成年人标准）。点击 +/- 调整。</div>';
+  h += '<div class="points-left">剩余点数: <b>'+left+'</b></div>';
+  h += '<div class="attr-table">';
+  var attrs = [
+    {k:'力量',d:'近战·负重'},
+    {k:'敏捷',d:'闪避·速度'},
+    {k:'体质',d:'HP·抗性'},
+    {k:'精神',d:'MP·意志'},
+    {k:'智力',d:'解析·推理'},
+    {k:'魅力',d:'交涉·领导'}
+  ];
+  for(var i=0;i<attrs.length;i++){
+    var a = attrs[i];
+    var v = data[a.k];
+    h += '<div class="attr-row">';
+    h += '<span class="aname">'+a.k+'</span>';
+    h += '<span class="adesc">'+a.d+'</span>';
+    h += '<button onclick="adjAttr(\''+a.k+'\',-1)" '+(v<=1?'disabled':'')+'>−</button>';
+    h += '<span class="aval">'+v+'</span>';
+    h += '<button onclick="adjAttr(\''+a.k+'\',+1)" '+(left<=0?'disabled':'')+'>+</button>';
+    h += '</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+function renderStep4(){
+  var h = '';
+  h += '<div class="toggle-row"><div><span class="tl">积分系统</span><span class="ts">副本结算奖励积分</span></div><div class="toggle'+(data.积分系统?' on':'')+'" onclick="data.积分系统=!data.积分系统;renderCurrentStep()"></div></div>';
+  if(data.积分系统){
+    h += '<div class="field" style="margin-top:4px"><label>初始积分</label><input type="number" value="'+esc(data.积分初始)+'" onchange="data.积分初始=this.value" min="0"></div>';
+  }
+  h += '<div class="toggle-row" style="margin-top:4px"><div><span class="tl">商城系统</span><span class="ts">锚点空间购买道具</span></div><div class="toggle'+(data.商城系统?' on':'')+'" onclick="data.商城系统=!data.商城系统;renderCurrentStep()"></div></div>';
+  if(data.商城系统){
+    h += '<div class="field" style="margin-top:4px"><label>商品方向偏好（可选）</label><input value="'+esc(data.商城方向)+'" onchange="data.商城方向=this.value" placeholder="如：东方仙侠 / 科技侧 / 奇幻魔法 / 不限"></div>';
+  }
+  h += '<div class="toggle-row" style="margin-top:4px"><div><span class="tl">任务系统</span></div><div class="toggle'+(data.任务系统?' on':'')+'" onclick="data.任务系统=!data.任务系统;renderCurrentStep()"></div></div>';
+  if(data.任务系统){
+    h += '<div class="field" style="margin-top:4px"><label>主线任务长度</label>'+radioGrp('主线长度',['长','短','无'],data.主线长度,'data.主线长度=this.dataset.val')+'</div>';
+    h += '<div class="toggle-row" style="margin-top:4px"><div><span class="tl">随机触发任务</span></div><div class="toggle'+(data.随机任务?' on':'')+'" onclick="data.随机任务=!data.随机任务;renderCurrentStep()"></div></div>';
+  }
+  return h;
+}
+
+function adjAttr(k,d){
+  var total = data.力量+data.敏捷+data.体质+data.精神+data.智力+data.魅力;
+  var left = 35 - total;
+  if(d > 0 && left <= 0) return;
+  if(d < 0 && data[k] <= 1) return;
+  data[k] += d;
+  renderCurrentStep();
+}
+
+function renderCurrentStep(){
+  var h = '';
+  if(step===0) h = renderStep0();
+  else if(step===1) h = renderStep1();
+  else if(step===2) h = renderStep2();
+  else if(step===3) h = renderStep3();
+  else if(step===4) h = renderStep4();
+  document.getElementById('step-body').innerHTML = h;
+  setDots(step);
+  renderFooter();
+}
+
+function renderFooter(){
+  var f = document.getElementById('step-footer');
+  var h = '';
+  if(step > 0) h += '<button class="btn-back" onclick="prevStep()">← 上一步</button>';
+  h += '<div style="flex:1"></div>';
+  if(step < totalSteps-1){
+    h += '<button class="btn-next" onclick="nextStep()">下一步 →</button>';
+  }else{
+    h += '<button class="btn-next" onclick="submitForm()">✓ 确认创建</button>';
+  }
+  f.innerHTML = h;
+}
+
+function nextStep(){
+  if(step < totalSteps-1){
+    step++;
+    renderCurrentStep();
+  }
+}
+
+function prevStep(){
+  if(step > 0){
+    step--;
+    renderCurrentStep();
+  }
+}
+
+function buildPayload(){
+  var parts = [];
+  parts.push('【角色创建】');
+  if(data.姓名) parts.push('姓名: '+data.姓名);
+  if(data.性别) parts.push('性别: '+data.性别);
+  if(data.年龄) parts.push('年龄: '+data.年龄);
+  if(data.外貌性格) parts.push('外貌性格: '+data.外貌性格);
+
+  parts.push('');
+  parts.push('【天赋】');
+  if(data.天赋模式==='手动指定'){
+    parts.push('手动指定: '+(data.天赋手动||'无'));
+  }else if(data.天赋模式==='随机抽取'){
+    parts.push('随机抽取: '+data.天赋随机数+'个, 方向: '+data.天赋方向);
+  }else{
+    parts.push('不要天赋');
+  }
+
+  parts.push('');
+  parts.push('【模式与锚点】');
+  parts.push('冒险模式: '+data.模式);
+  if(data.锚点==='自定义' && data.锚点自定义){
+    parts.push('锚点空间: 自定义 - '+data.锚点自定义);
+  }else{
+    parts.push('锚点空间: '+data.锚点);
+  }
+
+  parts.push('');
+  parts.push('【属性分配】');
+  parts.push('力量: '+data.力量+' | 敏捷: '+data.敏捷+' | 体质: '+data.体质+' | 精神: '+data.精神+' | 智力: '+data.智力+' | 魅力: '+data.魅力);
+
+  parts.push('');
+  parts.push('【系统设置】');
+  parts.push('积分系统: '+(data.积分系统?'开启('+data.积分初始+'积分)':'关闭'));
+  parts.push('商城系统: '+(data.商城系统?'开启'+(data.商城方向?'('+data.商城方向+')':'')+'':'关闭'));
+  parts.push('任务系统: '+(data.任务系统?('开启(主线'+data.主线长度+','+(data.随机任务?'随机任务开':'随机任务关')+')'):'关闭'));
+
+  return parts.join('\n');
+}
+
+function submitForm(){
+  var payload = buildPayload();
+  document.getElementById('step-body').innerHTML = '<div class="submitted-msg"><div class="icon">✓</div><p>正在生成你的无限流开局...</p><p style="font-size:10px;color:#5e5b75;margin-top:8px">请稍等片刻</p></div>';
+  document.getElementById('step-footer').innerHTML = '';
+
+  try{
+    var w = window;
+    var parentWin = (w.parent && w.parent !== w) ? w.parent : w;
+    var doc = parentWin.document || document;
+    var ta = doc.querySelector('#send_textarea');
+    if(ta){
+      var proto = (parentWin.HTMLTextAreaElement || w.HTMLTextAreaElement).prototype;
+      Object.getOwnPropertyDescriptor(proto,'value').set.call(ta, payload);
+      ta.dispatchEvent(new Event('input',{bubbles:true}));
+      setTimeout(function(){ doc.querySelector('#send_button').click(); }, 100);
+    }else if(typeof w.createChatMessages === 'function'){
+      w.createChatMessages([{role:'user',message:payload}]);
+      setTimeout(function(){ try{ w.generate(); }catch(e){} }, 150);
+    }else if(typeof w.triggerSlash === 'function'){
+      w.triggerSlash('/send-as user '+payload);
+    }
+  }catch(e){
+    console.error('[开局界面] 发送失败', e);
+    document.getElementById('step-body').innerHTML = '<div class="submitted-msg" style="color:#f87171"><p>发送失败</p><p style="font-size:10px;margin-top:8px">请手动输入你的设定</p></div>';
+  }
+}
+
+renderCurrentStep();
+</script>
+</body>
+</html>
