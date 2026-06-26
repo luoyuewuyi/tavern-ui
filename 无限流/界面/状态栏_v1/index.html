@@ -1,447 +1,189 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>无限流 · 状态栏</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Space+Mono&display=swap');
-
+:root{--bg:rgba(10,10,20,0.92);--surface:rgba(18,18,36,0.9);--border:rgba(100,140,255,0.12);--text:#c4ccde;--text-dim:#5e6680;--accent:#5b8def;--gold:#e2b04a;--danger:#e05555;--success:#5bbf6b;--hp:#e05555;--mp:#5b8def;--sp:#e2b04a;--radius:8px}
 *{box-sizing:border-box;margin:0;padding:0}
-
-:root{
-  --bg-deep:#0a0a0f;
-  --bg-card:rgba(18,18,30,0.85);
-  --glass:rgba(255,255,255,0.04);
-  --glass2:rgba(255,255,255,0.08);
-  --border:rgba(255,255,255,0.12);
-  --text-primary:#e8e6f0;
-  --text-secondary:#9895b0;
-  --text-dim:#615e75;
-  --accent-cyan:#00d4ff;
-  --accent-blue:#5b8def;
-  --accent-purple:#a78bfa;
-  --accent-red:#f87171;
-  --accent-green:#4ade80;
-  --accent-yellow:#fbbf24;
-  --accent-orange:#fb923c;
-  --hp-bar:#ef4444;
-  --mp-bar:#3b82f6;
-  --sp-bar:#22c55e;
-}
-
-body{
-  font-family:'Noto Sans SC','Microsoft YaHei',sans-serif;
-  background:transparent;
-  color:var(--text-primary);
-  font-size:12px;
-  line-height:1.5;
-  overflow:hidden;
-}
-
-.status-wrap{
-  max-width:420px;
-  margin:0 auto;
-  background:var(--bg-card);
-  border:1px solid var(--border);
-  border-radius:12px;
-  backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
-  box-shadow:0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 var(--glass);
-  overflow:hidden;
-}
-
-.status-header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:8px 14px;
-  background:var(--glass);
-  border-bottom:1px solid var(--border);
-  cursor:pointer;
-  user-select:none;
-  transition:background .2s;
-}
-.status-header:hover{background:var(--glass2)}
-.status-header .title{
-  font-size:13px;
-  font-weight:500;
-  letter-spacing:.5px;
-  color:var(--text-primary);
-}
-.status-header .arrow{
-  font-size:10px;
-  color:var(--text-dim);
-  transition:transform .3s;
-}
-.status-header .arrow.open{transform:rotate(180deg)}
-
-.status-body{
-  padding:10px 14px;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
-
-.section{
-  background:var(--glass);
-  border:1px solid var(--border);
-  border-radius:8px;
-  padding:8px 10px;
-}
-.section-title{
-  font-size:10px;
-  text-transform:uppercase;
-  letter-spacing:1px;
-  color:var(--accent-cyan);
-  margin-bottom:6px;
-  font-weight:500;
-}
-
-.world-info{
-  display:flex;
-  flex-wrap:wrap;
-  gap:4px 16px;
-  font-size:11px;
-  color:var(--text-secondary);
-}
-.world-info span{display:inline-flex;align-items:center;gap:3px}
-.world-info .label{color:var(--text-dim);font-size:10px}
-.world-info .val{color:var(--text-primary);font-weight:400}
-
-.attr-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:4px 8px;
-}
-.attr-item{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  font-size:11px;
-}
-.attr-item .name{color:var(--text-dim);font-size:10px}
-.attr-item .val{color:var(--accent-blue);font-weight:500;font-family:'Space Mono',monospace}
-
-.bars{display:flex;flex-direction:column;gap:4px}
-.bar-row{display:flex;align-items:center;gap:6px}
-.bar-label{width:18px;font-size:9px;color:var(--text-dim);text-align:right;flex-shrink:0}
-.bar-outer{flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden}
-.bar-inner{height:100%;border-radius:3px;transition:width .5s ease}
-.bar-inner.hp{background:linear-gradient(90deg,#dc2626,var(--hp-bar))}
-.bar-inner.mp{background:linear-gradient(90deg,#2563eb,var(--mp-bar))}
-.bar-inner.sp{background:linear-gradient(90deg,#16a34a,var(--sp-bar))}
-.bar-val{font-size:9px;color:var(--text-dim);font-family:'Space Mono',monospace;min-width:60px;text-align:right;flex-shrink:0}
-
-.injury-badge{
-  font-size:10px;
-  color:var(--accent-red);
-  background:rgba(239,68,68,0.1);
-  border:1px solid rgba(239,68,68,0.3);
-  border-radius:4px;
-  padding:2px 7px;
-  display:inline-block;
-  margin-top:2px;
-}
-
-.tag-list{display:flex;flex-wrap:wrap;gap:3px}
-.tag{
-  font-size:10px;
-  padding:2px 7px;
-  border-radius:4px;
-  background:var(--glass2);
-  border:1px solid var(--border);
-  color:var(--text-secondary);
-}
-.tag.talent{background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:var(--accent-purple)}
-.tag.skill{background:rgba(0,212,255,0.08);border-color:rgba(0,212,255,0.2);color:var(--accent-cyan)}
-.tag.item{background:rgba(251,191,36,0.08);border-color:rgba(251,191,36,0.2);color:var(--accent-yellow)}
-
-.team-list{display:flex;flex-direction:column;gap:5px}
-.teammate{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:4px 8px;
-  background:var(--glass);
-  border-radius:5px;
-  border:1px solid var(--border);
-}
-.teammate .info{display:flex;flex-direction:column}
-.teammate .name{font-size:11px;font-weight:500;color:var(--text-primary)}
-.teammate .sub{font-size:9px;color:var(--text-dim)}
-.teammate .relation{
-  font-size:9px;
-  padding:1px 6px;
-  border-radius:3px;
-  background:rgba(139,92,246,0.1);
-  color:var(--accent-purple);
-}
-.teammate .attr{font-size:10px;color:var(--accent-green);font-family:'Space Mono',monospace}
-
-.npc-list{display:flex;flex-direction:column;gap:4px}
-.npc-item{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  font-size:10px;
-  padding:3px 6px;
-  background:var(--glass);
-  border-radius:4px;
-}
-.npc-item .npc-name{color:var(--text-primary);font-weight:500}
-.npc-item .npc-meta{color:var(--text-dim);font-size:9px}
-
-.switch-row{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  font-size:10px;
-}
-.switch-row .sw{
-  display:flex;
-  align-items:center;
-  gap:3px;
-  color:var(--text-dim);
-}
-.switch-row .sw.on{color:var(--accent-green)}
-.switch-row .sw.off{color:var(--text-dim);text-decoration:line-through}
-
-.quest-line{
-  font-size:10px;
-  color:var(--text-secondary);
-  padding:3px 6px;
-  border-left:2px solid var(--accent-cyan);
-  margin:2px 0;
-}
-.quest-line .ql{color:var(--text-dim);font-size:9px}
-
-.empty-text{font-size:10px;color:var(--text-dim);font-style:italic;text-align:center;padding:4px}
-
-.points-row{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  font-size:11px;
-}
-.points-row .pp{color:var(--accent-yellow);font-weight:600;font-family:'Space Mono',monospace}
-.points-row .pp-label{color:var(--text-dim);font-size:10px}
-</style>
-</head>
-<body>
-<div class="status-wrap" id="status-root">
-  <div class="status-header" onclick="toggleBody()">
-    <span class="title" id="header-title">加载中...</span>
-    <span class="arrow open" id="arrow">▼</span>
-  </div>
-  <div class="status-body" id="status-body">
-    <div id="content-area">正在连接变量系统...</div>
-  </div>
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:transparent;color:var(--text);font-size:0.8rem;line-height:1.5;max-height:600px;overflow-y:auto;overflow-x:hidden;padding:8px 10px;scrollbar-width:thin;scrollbar-color:rgba(100,140,255,0.15) transparent}
+body::-webkit-scrollbar{width:3px}
+body::-webkit-scrollbar-thumb{background:rgba(100,140,255,0.15);border-radius:2px}
+.status-main{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px;backdrop-filter:blur(10px);max-width:100%}
+.header-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.header-left h2{font-size:1rem;font-weight:700;background:linear-gradient(135deg,#8bb5ff,#c8a0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:0}
+.header-left .world-tag{font-size:0.7rem;color:var(--text-dim);margin-top:1px}
+.header-right{text-align:right;font-size:0.7rem;color:var(--text-dim)}
+.bars-section{margin-bottom:10px}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.bar-label{width:28px;font-size:0.7rem;font-weight:700;text-align:right}
+.bar-label.hp{color:var(--hp)}.bar-label.mp{color:var(--mp)}.bar-label.sp{color:var(--sp)}
+.bar-track{flex:1;height:7px;background:rgba(255,255,255,0.04);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width 0.4s}
+.bar-fill.hp{background:linear-gradient(90deg,#c0392b,#e05555)}.bar-fill.mp{background:linear-gradient(90deg,#2b6cb0,#5b8def)}.bar-fill.sp{background:linear-gradient(90deg,#b8860b,#e2b04a)}
+.bar-val{font-size:0.7rem;color:var(--text-dim);width:60px;text-align:right;white-space:nowrap}
+.stat-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:10px}
+.stat-cell{text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:5px 3px}
+.stat-cell .sv{font-size:0.9rem;font-weight:700;color:var(--gold)}
+.stat-cell .sn{font-size:0.65rem;color:var(--text-dim)}
+.info-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.02);font-size:0.75rem}
+.info-row .ik{color:var(--text-dim);flex-shrink:0;margin-right:8px}
+.info-row .iv{text-align:right;word-break:break-all}
+.badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:0.68rem;margin:1px 2px}
+.badge.gold{background:rgba(226,176,74,0.12);color:var(--gold)}
+.badge.epic{background:rgba(162,100,255,0.12);color:#a264ff}
+.badge.rare{background:rgba(91,141,239,0.12);color:var(--accent)}
+.badge.danger{background:rgba(224,85,85,0.12);color:var(--danger)}
+summary{cursor:pointer;font-size:0.82rem;font-weight:700;color:#8bb5ff;padding:5px 0;outline:none;user-select:none;display:flex;align-items:center;gap:4px}
+summary:hover{color:#a0cbff}
+details{margin-bottom:4px}
+details[open] summary{margin-bottom:4px}
+.npc-table,.quest-table,.mem-table{width:100%;border-collapse:collapse;font-size:0.72rem}
+.npc-table th,.quest-table th,.mem-table th{text-align:left;color:var(--text-dim);font-weight:600;padding:2px 6px;border-bottom:1px solid var(--border);font-size:0.68rem}
+.npc-table td,.quest-table td,.mem-table td{padding:3px 6px;border-bottom:1px solid rgba(255,255,255,0.02)}
+.rec-list{list-style:none;padding:0;margin:0}
+.rec-list li{font-size:0.73rem;padding:2px 0;padding-left:10px;position:relative}
+.rec-list li:before{content:'▸';position:absolute;left:0;color:var(--accent);font-size:0.6rem;top:5px}
+.empty-text{color:var(--text-dim);font-size:0.73rem;font-style:italic}
+.injury-badge{padding:2px 6px;border-radius:3px;font-size:0.7rem}
+.injury-badge.none{color:var(--success)}
+.injury-badge.light{color:var(--gold)}
+.injury-badge.severe{color:var(--danger)}
+.reload-bar{text-align:center;font-size:0.65rem;color:var(--text-dim);margin-top:4px}
+</style></head><body>
+<div class="status-main" id="statusRoot">
+<div style="text-align:center;color:var(--text-dim);padding:30px">⏳ 等待数据加载…</div>
 </div>
-
 <script>
-var isOpen = true;
-function toggleBody(){
-  isOpen = !isOpen;
-  var b = document.getElementById('status-body');
-  var a = document.getElementById('arrow');
-  b.style.display = isOpen ? '' : 'none';
-  a.className = 'arrow' + (isOpen ? ' open' : '');
+function get(d,path,def){
+  var keys=path.split('.'),r=d;
+  for(var i=0;i<keys.length;i++){if(r==null||typeof r!=='object')return def;r=r[keys[i]]}
+  return r!=null?r:def;
+}
+function fmt(v,def){return v||v===0?String(v):(def||'—')}
+
+function render(data){
+  if(!data||!data.主角){document.getElementById('statusRoot').innerHTML='<div style="text-align:center;color:var(--text-dim);padding:30px">⏳ 等待数据加载…</div>';return}
+  var w=data.世界||{},p=data.主角||{},bi=p.基础信息||{},at=p.属性||{},st=p.状态||{},cl=p.穿着||{},tm=data.队友||[],nv=data.当前环境NPC||{},qt=data.当前任务||{},mem=data.记忆库||{},rec=data.行动推荐||[],sw=data.系统开关||{};
+  var talents=p.天赋||{},skills=p.技能||{},items=p.物品栏||{};
+  var hp=st.生命值||0,hpm=st.生命值上限||100,mp=st.法力值||0,mpm=st.法力值上限||1,sp=st.体力值||0,spm=st.体力值上限||1;
+  var h='';
+
+  h+='<div class="header-row"><div class="header-left"><h2>⚡ '+fmt(get(p,'基础信息.姓名'),'适格者')+'</h2><div class="world-tag">🌍 '+fmt(w.当前世界)+' · '+fmt(w.当前世界类型)+'</div></div><div class="header-right">🕐 '+fmt(w.当前时间)+'<br>📍 '+fmt(w.当前地点)+'<br>🌤 '+fmt(w.天气,'—')+'</div></div>';
+
+  h+='<div class="bars-section">';
+  h+='<div class="bar-row"><span class="bar-label hp">HP</span><div class="bar-track"><div class="bar-fill hp" style="width:'+(hpm?hp/hpm*100:0)+'%"></div></div><span class="bar-val">'+hp+' / '+hpm+'</span></div>';
+  h+='<div class="bar-row"><span class="bar-label mp">MP</span><div class="bar-track"><div class="bar-fill mp" style="width:'+(mpm?mp/mpm*100:0)+'%"></div></div><span class="bar-val">'+mp+' / '+mpm+'</span></div>';
+  h+='<div class="bar-row"><span class="bar-label sp">SP</span><div class="bar-track"><div class="bar-fill sp" style="width:'+(spm?sp/spm*100:0)+'%"></div></div><span class="bar-val">'+sp+' / '+spm+'</span></div>';
+  h+='</div>';
+
+  var inj=st.伤势描述;h+='<div class="info-row"><span class="ik">伤势</span><span class="iv"><span class="injury-badge '+(inj&&inj!=='无'?(inj.includes('重')||inj.includes('骨')?'severe':'light'):'none')+'">'+fmt(inj,'无')+'</span></span></div>';
+
+  h+='<div class="stat-grid">';
+  ['力量','敏捷','体质','精神','智力','魅力'].forEach(function(s){h+='<div class="stat-cell"><div class="sv">'+fmt(at[s])+'</div><div class="sn">'+s+'</div></div>'});
+  h+='</div>';
+  h+='<div class="info-row"><span class="ik">剩余属性点</span><span class="iv">'+fmt(at.剩余属性点,'0')+'</span></div>';
+
+  h+='<details><summary>👤 主角信息</summary>';
+  h+='<div class="info-row"><span class="ik">年龄</span><span class="iv">'+fmt(bi.年龄)+' · '+fmt(bi.性别)+'</span></div>';
+  h+='<div class="info-row"><span class="ik">外貌</span><span class="iv">'+fmt(bi.外貌)+'</span></div>';
+  if(bi.性格行为模式)h+='<div class="info-row"><span class="ik">性格</span><span class="iv">'+fmt(bi.性格行为模式)+'</span></div>';
+  h+='<div class="info-row"><span class="ik">穿着</span><span class="iv">'+fmt(cl.整体描述)+'</span></div>';
+  h+='<div class="info-row"><span class="ik">积分</span><span class="iv">'+(sw.积分系统?fmt(p.积分,'0'):'已关闭')+'</span></div>';
+  h+='</details>';
+
+  h+='<details><summary>⭐ 天赋 ('+Object.keys(talents).length+')</summary>';
+  if(Object.keys(talents).length){
+    Object.keys(talents).forEach(function(t){
+      var td=talents[t];var cls=td.等级==='传说'?'gold':(td.等级==='史诗'?'epic':(td.等级==='稀有'?'rare':''));
+      h+='<div class="info-row"><span class="ik"><span class="badge '+(cls||'')+'">'+fmt(td.等级)+'</span> '+t+'</span><span class="iv" style="font-size:0.72rem">'+fmt(td.描述)+'</span></div>';
+    });
+  }else{h+='<div class="empty-text">无</div>'}
+  h+='</details>';
+
+  h+='<details><summary>⚔ 技能 ('+Object.keys(skills).length+')</summary>';
+  if(Object.keys(skills).length){
+    Object.keys(skills).forEach(function(s){
+      var sk=skills[s];h+='<div class="info-row"><span class="ik">'+s+' <span class="badge">'+fmt(sk.类型)+'</span> '+fmt(sk.熟练度)+'</span><span class="iv" style="font-size:0.72rem">'+fmt(sk.描述)+(sk.冷却回合?' CD:'+fmt(sk.剩余冷却)+'/'+sk.冷却回合:'')+'</span></div>';
+    });
+  }else{h+='<div class="empty-text">无</div>'}
+  h+='</details>';
+
+  h+='<details><summary>🎒 物品 ('+Object.keys(items).length+')</summary>';
+  if(Object.keys(items).length){
+    Object.keys(items).forEach(function(i){
+      var it=items[i];h+='<div class="info-row"><span class="ik">'+i+' <span class="badge">'+fmt(it.品质)+'</span> ×'+fmt(it.数量)+'</span><span class="iv" style="font-size:0.72rem">'+fmt(it.描述)+'</span></div>';
+    });
+  }else{h+='<div class="empty-text">无</div>'}
+  h+='</details>';
+
+  h+='<details open><summary>👥 队友 ('+tm.length+')</summary>';
+  if(tm.length){
+    h+='<table class="npc-table"><tr><th>名字</th><th>身份</th><th>好感</th><th>态度</th><th>状态</th></tr>';
+    tm.forEach(function(t){h+='<tr><td>'+fmt(t.名字)+'</td><td>'+fmt(t.身份)+'</td><td>'+fmt(t.好感度,'0')+'</td><td>'+fmt(t.态度)+'</td><td>'+fmt(t.状态)+'</td></tr>'});
+    h+='</table>';
+  }else{h+='<div class="empty-text">无</div>'}
+  h+='</details>';
+
+  h+='<details><summary>🏘 当前环境NPC ('+Object.keys(nv).length+')</summary>';
+  if(Object.keys(nv).length){
+    h+='<table class="npc-table"><tr><th>名字</th><th>身份</th><th>关系</th><th>态度</th><th>状态</th></tr>';
+    Object.keys(nv).forEach(function(k){var n=nv[k];h+='<tr><td>'+k+'</td><td>'+fmt(n.身份)+'</td><td>'+fmt(n.关系)+'</td><td>'+fmt(n.态度)+'</td><td>'+fmt(n.状态)+'</td></tr>'});
+    h+='</table>';
+  }else{h+='<div class="empty-text">无</div>'}
+  h+='</details>';
+
+  h+='<details><summary>📋 当前任务</summary>';
+  h+='<div class="info-row"><span class="ik">主线</span><span class="iv">'+fmt(qt.主线,'无')+(qt.主线&&qt.主线总节点?' (节点'+fmt(qt.主线节点,'0')+'/'+qt.主线总节点+')':'')+'</span></div>';
+  var sq=qt.支线||{};if(Object.keys(sq).length){
+    Object.keys(sq).forEach(function(q){var qd=sq[q];h+='<div class="info-row"><span class="ik">'+q+' <span class="badge '+(qd.状态==='已完成'?'':'danger')+'">'+fmt(qd.状态)+'</span></span><span class="iv" style="font-size:0.72rem">'+fmt(qd.描述)+'</span></div>'});
+  }
+  h+='</details>';
+
+  h+='<details><summary>📖 记忆库 ('+Object.keys(mem).length+'个世界)</summary>';
+  if(Object.keys(mem).length){
+    h+='<table class="mem-table"><tr><th>世界</th><th>状态</th><th>关键事件</th></tr>';
+    Object.keys(mem).slice(-5).forEach(function(k){var m=mem[k],ev=m.关键事件||[];h+='<tr><td>'+k+'</td><td>'+fmt(m.通关状态)+'</td><td>'+ev.length+'件</td></tr>'});
+    h+='</table>';
+  }else{h+='<div class="empty-text">尚未经历任何世界</div>'}
+  h+='</details>';
+
+  if(rec&&rec.length){
+    h+='<details open><summary>💡 行动推荐</summary><ul class="rec-list">';
+    rec.forEach(function(r){h+='<li>'+r+'</li>'});
+    h+='</ul></details>';
+  }
+
+  h+='<div class="reload-bar">自动刷新中 · 数据源: MVU stat_data</div>';
+  document.getElementById('statusRoot').innerHTML=h;
 }
 
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-
-function getStatData(){
+function readData(){
   try{
-    var v = (window.getVariables && window.getVariables({type:'message'}));
-    if(v && v.stat_data && typeof v.stat_data === 'object' && v.stat_data.主角) return v.stat_data;
-  }catch(e){}
-  try{
-    var m = window.Mvu && window.Mvu.getMvuData && window.Mvu.getMvuData({type:'message',message_id:-1});
-    if(m && m.stat_data && typeof m.stat_data === 'object' && m.stat_data.主角) return m.stat_data;
-  }catch(e){}
-  try{
-    var a = window.getAllVariables && window.getAllVariables();
-    if(a && a.stat_data && typeof a.stat_data === 'object' && a.stat_data.主角) return a.stat_data;
-  }catch(e){}
+    var gv=window.getVariables;var mv=window.Mvu;
+    var raw=gv?gv({type:'message'}):null;
+    if(raw&&raw.stat_data&&typeof raw.stat_data==='object'&&raw.stat_data.主角)return raw.stat_data;
+    if(mv&&mv.getMvuData){
+      var d=mv.getMvuData({type:'message',message_id:-1});
+      if(d&&d.stat_data&&typeof d.stat_data==='object'&&d.stat_data.主角)return d.stat_data;
+    }
+    var all=window.getAllVariables?window.getAllVariables():null;
+    if(all&&all.stat_data&&typeof all.stat_data==='object'&&all.stat_data.主角)return all.stat_data;
+  }catch(e){console.error('[状态栏]读取数据失败',e)}
   return null;
 }
 
-function bar(c,v,mx,cls){
-  var pct = mx > 0 ? Math.min(100, Math.max(0, (v/mx)*100)) : 0;
-  return '<div class="bar-row">' +
-    '<span class="bar-label">'+esc(c)+'</span>' +
-    '<div class="bar-outer"><div class="bar-inner '+cls+'" style="width:'+pct+'%"></div></div>' +
-    '<span class="bar-val">'+esc(v)+'/'+esc(mx)+'</span>' +
-    '</div>';
-}
-
-function render(data){
-  if(!data || !data.主角){
-    document.getElementById('content-area').innerHTML = '<div class="empty-text">等待数据同步...</div>';
-    return;
-  }
-  var d = data;
-  var p = d.主角;
-  var w = d.世界 || {};
-  var html = '';
-
-  // 世界信息
-  var env = (w.环境描述 || '');
-  html += '<div class="section">';
-  html += '<div class="section-title">世界</div>';
-  html += '<div class="world-info">';
-  html += '<span><span class="label">时间</span> <span class="val">'+esc(w.当前时间||'?')+'</span></span>';
-  html += '<span><span class="label">地点</span> <span class="val">'+esc(w.当前地点||'?')+'</span></span>';
-  html += '<span><span class="label">副本</span> <span class="val">'+esc(w.当前世界||'?')+'</span></span>';
-  html += '</div>';
-  if(env) html += '<div style="font-size:10px;color:#9895b0;margin-top:3px">'+esc(env)+'</div>';
-  html += '</div>';
-
-  // 属性
-  var attr = (p.属性 || {});
-  html += '<div class="section">';
-  html += '<div class="section-title">属性' + (attr.剩余属性点 ? ' <span style="color:#fbbf24">剩'+attr.剩余属性点+'点</span>' : '') + '</div>';
-  html += '<div class="attr-grid">';
-  var attrs = ['力量','敏捷','体质','精神','智力','魅力'];
-  for(var i=0;i<attrs.length;i++){
-    html += '<div class="attr-item"><span class="name">'+attrs[i]+'</span><span class="val">'+(attr[attrs[i]]||0)+'</span></div>';
-  }
-  html += '</div></div>';
-
-  // 状态条
-  var s = (p.状态 || {});
-  html += '<div class="section">';
-  html += '<div class="section-title">状态</div>';
-  html += '<div class="bars">';
-  html += bar('HP', s.生命值||0, s.生命值上限||100, 'hp');
-  html += bar('MP', s.法力值||0, s.法力值上限||50, 'mp');
-  html += bar('SP', s.体力值||0, s.体力值上限||100, 'sp');
-  html += '</div>';
-  if(s.伤势描述 && s.伤势描述 !== '无'){
-    html += '<div class="injury-badge">伤: '+esc(s.伤势描述)+'</div>';
-  }
-  html += '</div>';
-
-  // 天赋 + 技能 + 穿着
-  html += '<div class="section">';
-  html += '<div class="section-title">装备</div>';
-  var talents = p.天赋 || {};
-  var tk = Object.keys(talents);
-  if(tk.length > 0){
-    html += '<div class="tag-list">';
-    for(var i=0;i<tk.length;i++){
-      html += '<span class="tag talent" title="'+esc(talents[tk[i]].等级||'')+'">'+esc(tk[i])+'</span>';
-    }
-    html += '</div>';
-  }
-  var skills = p.技能 || {};
-  var sk = Object.keys(skills);
-  if(sk.length > 0){
-    html += '<div class="tag-list" style="margin-top:3px">';
-    for(var i=0;i<sk.length;i++){
-      html += '<span class="tag skill" title="'+esc(skills[sk[i]].描述||'')+'">'+esc(sk[i])+'</span>';
-    }
-    html += '</div>';
-  }
-  if(p.穿着) html += '<div style="font-size:10px;color:#9895b0;margin-top:3px">穿着: '+esc(p.穿着)+'</div>';
-  if(tk.length===0&&sk.length===0) html += '<div class="empty-text">暂无天赋/技能</div>';
-  html += '</div>';
-
-  // 物品栏
-  html += '<div class="section">';
-  html += '<div class="section-title">物品&积分</div>';
-  var items = p.物品栏 || {};
-  var ik = Object.keys(items);
-  if(ik.length > 0){
-    html += '<div class="tag-list">';
-    for(var i=0;i<ik.length;i++){
-      html += '<span class="tag item">'+esc(ik[i])+' ×'+(items[ik[i]].数量||1)+'</span>';
-    }
-    html += '</div>';
-  }else{
-    html += '<div class="empty-text">无物品</div>';
-  }
-  html += '<div class="points-row" style="margin-top:4px"><span class="pp-label">积分</span><span class="pp">'+(p.积分||0)+'</span>';
-  html += '<span class="pp-label">模式</span><span class="pp">'+(data.模式||'?')+'</span></div>';
-  html += '</div>';
-
-  // 队友
-  html += '<div class="section">';
-  html += '<div class="section-title">队友</div>';
-  var team = data.队友 || [];
-  if(team.length > 0){
-    html += '<div class="team-list">';
-    for(var i=0;i<team.length;i++){
-      var t = team[i];
-      html += '<div class="teammate">';
-      html += '<div class="info"><span class="name">'+esc(t.名字||'?')+'</span><span class="sub">'+esc(t.状态||'')+' · '+esc(t.态度||'')+'</span></div>';
-      html += '<div style="display:flex;align-items:center;gap:6px">';
-      html += '<span class="relation">'+esc(t.关系||'')+'</span>';
-      html += '<span class="attr">'+esc(t.好感度||0)+'</span>';
-      html += '</div></div>';
-    }
-    html += '</div>';
-  }else{
-    html += '<div class="empty-text">无</div>';
-  }
-  html += '</div>';
-
-  // 当前NPC
-  html += '<div class="section">';
-  html += '<div class="section-title">环境NPC</div>';
-  var npcs = data.当前环境NPC || {};
-  var nk = Object.keys(npcs);
-  if(nk.length > 0){
-    html += '<div class="npc-list">';
-    for(var i=0;i<nk.length;i++){
-      var n = npcs[nk[i]];
-      html += '<div class="npc-item"><span class="npc-name">'+esc(nk[i])+'</span>';
-      html += '<span class="npc-meta">'+esc(n.态度||'')+' · '+esc(n.关系||'')+'</span></div>';
-    }
-    html += '</div>';
-  }else{
-    html += '<div class="empty-text">无</div>';
-  }
-  html += '</div>';
-
-  // 系统开关+任务
-  html += '<div class="section">';
-  html += '<div class="section-title">系统</div>';
-  var sw = data.系统开关 || {};
-  html += '<div class="switch-row">';
-  html += '<span class="sw '+(sw.积分系统?'on':'off')+'">积分</span>';
-  html += '<span class="sw '+(sw.商城系统?'on':'off')+'">商城</span>';
-  html += '<span class="sw '+(sw.任务系统?'on':'off')+'">任务</span>';
-  html += '<span style="color:#615e75;font-size:9px">主线:'+(sw.主线任务长度||'?')+'</span>';
-  html += '</div>';
-  var qt = data.当前任务 || {};
-  if(qt.主线) html += '<div class="quest-line"><span class="ql">主线</span> '+esc(qt.主线)+'</div>';
-  var side = qt.支线 || {};
-  var sk = Object.keys(side);
-  if(sk.length > 0){
-    for(var i=0;i<sk.length;i++){
-      html += '<div class="quest-line"><span class="ql">'+(side[sk[i]].状态||'')+'</span> '+esc(sk[i])+'</div>';
-    }
-  }
-  html += '</div>';
-
-  document.getElementById('content-area').innerHTML = html;
-  document.getElementById('header-title').textContent = (p.基础信息&&p.基础信息.姓名 ? esc(p.基础信息.姓名) : '适格者') + ' · ' + esc(w.当前世界||'初始空间');
-}
-
 function refresh(){
-  var d = getStatData();
-  if(d) render(d);
+  var d=readData();
+  if(d)render(d);
 }
 
-$(function(){
-  refresh();
-  var mvu = window.Mvu;
-  if(mvu && mvu.events && mvu.events.VARIABLE_UPDATE_ENDED && typeof window.eventOn === 'function'){
-    window.eventOn(mvu.events.VARIABLE_UPDATE_ENDED, refresh);
+refresh();
+
+try{
+  var mv=window.Mvu;
+  if(mv&&mv.events&&mv.events.VARIABLE_UPDATE_ENDED&&typeof window.eventOn==='function'){
+    window.eventOn(mv.events.VARIABLE_UPDATE_ENDED,refresh);
   }
-  setInterval(refresh, 2000);
-});
-</script>
-</body>
-</html>
+}catch(e){}
+
+setInterval(refresh,2000);
+</script></body></html>
