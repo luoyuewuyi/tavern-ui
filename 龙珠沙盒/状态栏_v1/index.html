@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+  /* 龙珠 · 神之气状态栏 (自在极意/超蓝基调) */
+  :root{
+    --bg0:#04040c; --bg1:#120822; --bg2:#001a2e;
+    --cyan:#00f0ff; --cyan-d:#0aa; --gold:#ffd24a; --gold-d:#c89020;
+    --magenta:#ff3b8b; --rose:#ff6fae; --rose-bg:rgba(255,40,120,0.08);
+    --txt:#e6f2ff; --txt-d:#7fa6c8; --txt-dd:#4d6b85;
+    --line:rgba(0,240,255,0.18); --line-rose:rgba(255,64,140,0.28);
+    --panel:rgba(10,14,28,0.62); --panel-rose:rgba(30,8,20,0.6);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Noto Sans SC','Segoe UI',Tahoma,sans-serif;
+    background:transparent;color:var(--txt);font-size:12px;line-height:1.5;
+    padding:4px;-webkit-font-smoothing:antialiased;
+  }
+  .lz-container{
+    width:100%;
+    background:linear-gradient(135deg,var(--bg0) 0%,var(--bg1) 55%,var(--bg2) 100%);
+    border:1.5px solid var(--cyan);border-radius:14px;padding:11px;
+    box-shadow:0 0 22px rgba(0,240,255,.32),inset 0 0 18px rgba(0,240,255,.06);
+    position:relative;overflow:hidden;
+  }
+  .lz-container::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(circle at 80% -10%,rgba(0,240,255,.12),transparent 40%),
+               radial-gradient(circle at 0% 110%,rgba(255,60,140,.08),transparent 40%);
+  }
+  .lz-header{
+    text-align:center;font-weight:900;font-size:15px;letter-spacing:3px;
+    color:#fff;padding:7px 0 9px;margin-bottom:10px;position:relative;
+    text-shadow:0 0 10px var(--cyan),0 0 22px rgba(0,240,255,.5);
+    border-bottom:1px solid var(--line);
+  }
+  .lz-world{text-align:center;font-size:11px;color:var(--txt-d);margin-bottom:10px;
+    text-shadow:0 0 5px var(--cyan-d);position:relative;min-height:14px}
+  .lz-world .sep{color:var(--cyan);margin:0 4px}
+
+  /* 翻页导航 */
+  .lz-nav{display:flex;align-items:center;justify-content:space-between;
+    background:linear-gradient(90deg,transparent,rgba(0,240,255,.18),transparent);
+    border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin-bottom:10px;position:relative}
+  .lz-nav .nav-btn{
+    background:rgba(0,240,255,.12);color:var(--cyan);border:1px solid var(--line);
+    border-radius:8px;padding:4px 12px;cursor:pointer;font-weight:700;font-size:12px;
+    transition:.18s;user-select:none;
+  }
+  .lz-nav .nav-btn:hover{background:rgba(0,240,255,.25);box-shadow:0 0 8px rgba(0,240,255,.4)}
+  .lz-nav .nav-btn:active{transform:scale(.95)}
+  .lz-nav .nav-title{font-weight:900;color:#fff;letter-spacing:1px;text-shadow:0 0 8px var(--cyan)}
+  .lz-nav .nav-page{font-size:11px;color:var(--txt-d);font-family:'Orbitron',monospace}
+
+  .lz-panel{
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:9px;margin-bottom:9px;backdrop-filter:blur(6px);position:relative;
+  }
+  .lz-panel.rose{background:var(--panel-rose);border-color:var(--line-rose)}
+  .panel-title{font-weight:900;color:var(--cyan);font-size:13px;letter-spacing:1px;
+    border-bottom:1px solid var(--line);padding-bottom:4px;margin-bottom:7px;
+    text-shadow:0 0 7px rgba(0,240,255,.55)}
+  .panel-title.rose{color:var(--rose);border-color:var(--line-rose);text-shadow:0 0 7px rgba(255,64,140,.55)}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+  .row{margin-bottom:4px}
+  .lbl{color:var(--txt-d);font-weight:700}
+  .val{color:#fff}
+  .hi{color:#fff;font-weight:900;text-shadow:0 0 6px var(--cyan)}
+  .hi-gold{color:var(--gold);font-weight:900;text-shadow:0 0 6px var(--gold)}
+  .hi-rose{color:var(--rose);font-weight:900;text-shadow:0 0 6px var(--rose)}
+  .full{grid-column:span 2}
+
+  .lbox{background:rgba(0,240,255,.05);border:1px solid var(--line);
+    border-radius:7px;padding:5px 7px;margin-top:3px;font-size:11px}
+  .litem{margin-bottom:3px;padding-bottom:3px;border-bottom:1px dashed rgba(0,240,255,.12)}
+  .litem:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+  .empty{color:var(--txt-dd);font-style:italic;font-size:11px}
+
+  /* 进度条 */
+  .bar{height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;margin-top:2px}
+  .bar>i{display:block;height:100%;border-radius:3px}
+  .bar-hp>i{background:linear-gradient(90deg,#c0392b,#e05555,#f06060)}
+  .bar-ki>i{background:linear-gradient(90deg,#1a6fa0,#00b8d4,#00f0ff)}
+  .bar-rose>i{background:linear-gradient(90deg,#a01050,#ff3b8b,#ff6fae)}
+
+  /* NSFW 玫瑰区 */
+  .rose-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;
+    background:rgba(255,64,140,.07);border:1px solid var(--line-rose);
+    border-radius:8px;padding:6px;box-shadow:inset 0 0 10px rgba(255,64,140,.1)}
+  .rose-box{background:rgba(255,255,255,.04);border:1px solid var(--line-rose);
+    border-radius:7px;padding:5px 6px;margin-top:4px;font-size:11px;
+    box-shadow:inset 0 0 8px rgba(255,64,140,.12)}
+  .rose-item{margin-bottom:3px;padding-bottom:3px;border-bottom:1px dotted rgba(255,64,140,.25)}
+  .rose-item:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+  .r-lbl{color:var(--rose);font-weight:700}
+  .r-val{color:#ffd0e0;font-weight:600}
+
+  .badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700}
+  .badge-f{background:rgba(255,64,140,.18);color:var(--rose);border:1px solid var(--line-rose)}
+  .badge-m{background:rgba(0,240,255,.16);color:var(--cyan);border:1px solid var(--line)}
+  .badge-tag{background:rgba(255,210,74,.15);color:var(--gold);border:1px solid rgba(255,210,74,.25)}
+
+  .foot{text-align:center;font-size:10px;color:var(--txt-dd);margin-top:6px;letter-spacing:.5px}
+  .foot i{color:var(--cyan-d)}
+</style>
+</head>
+<body>
+<div class="lz-container">
+  <div class="lz-header">DRAGON BALL · 神之气状态</div>
+  <div class="lz-world" id="w-info">读取中…</div>
+
+  <div class="lz-nav">
+    <button class="nav-btn" id="btn-prev">◀</button>
+    <div><div class="nav-title" id="nav-title">主角</div><div class="nav-page" id="nav-page">1/1</div></div>
+    <button class="nav-btn" id="btn-next">▶</button>
+  </div>
+
+  <div id="page-body"></div>
+
+  <div class="foot"><i class="fa-solid fa-arrows-rotate fa-spin"></i> 实时同步 MVU stat_data · 左右翻页</div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<script>
+(function(){
+  'use strict';
+  console.log('[龙珠状态栏] 脚本加载');
+
+  // ===== 最新 stat_data 适配器 =====
+  function extractStatData(v){
+    if(!v) return null;
+    if(v.stat_data && typeof v.stat_data==='object') return v.stat_data;
+    return null;
+  }
+  function readLatestStatData(){
+    try{
+      var cur=window.getVariables?window.getVariables({type:'message'}):null;
+      var d=extractStatData(cur); if(d && d.主角) return d;
+    }catch(e){console.error('[龙珠状态栏] getVariables',e)}
+    try{
+      var mv=window.Mvu;
+      if(mv&&mv.getMvuData){var d2=extractStatData(mv.getMvuData({type:'message',message_id:-1})); if(d2&&d2.主角) return d2;}
+    }catch(e){console.error('[龙珠状态栏] getMvuData',e)}
+    try{
+      var all=window.getAllVariables?window.getAllVariables():null;
+      var d3=extractStatData(all); if(d3&&d3.主角) return d3;
+    }catch(e){console.error('[龙珠状态栏] getAllVariables',e)}
+    return null;
+  }
+
+  function g(o,p,df){return _.get(o,p,df!=null?df:'—')}
+  function f(v,df){return v||v===0?String(v):(df!=null?df:'—')}
+  function esc(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c]})}
+
+  function renderRecord(obj,empty){
+    if(!obj||!Object.keys(obj).length) return '<div class="empty">'+(empty||'无')+'</div>';
+    return Object.entries(obj).map(function(e){
+      var v=e[1];
+      var vs = (v&&typeof v==='object') ? (v.描述!=null?e[0]+': '+v.描述+(v.数量!=null?(' ×'+v.数量):''):esc(JSON.stringify(v))) : esc(v);
+      return '<div class="litem"><span class="lbl">'+esc(e[0])+':</span> <span class="val">'+(v&&typeof v==='object'?'<span class="val">'+esc(v.描述||'')+(v.数量!=null?' ×'+v.数量:'')+'</span>':esc(v))+'</span></div>';
+    }).join('');
+  }
+  function renderSkill(obj,empty){
+    if(!obj||!Object.keys(obj).length) return '<div class="empty">'+(empty||'无')+'</div>';
+    return Object.entries(obj).map(function(e){return '<div class="litem">'+esc(e[0])+'（'+esc(e[1])+'）</div>'}).join('');
+  }
+
+  // 解析 "85%｜描述" → {pct,desc}
+  function parsePct(s){
+    if(!s) return {pct:null,desc:'—'};
+    var m=String(s).match(/(\d+(?:\.\d+)?)\s*%/);
+    var desc=String(s).replace(/^\s*\d+(?:\.\d+)?\s*%[\s|｜]*/,'').trim();
+    return {pct:m?parseFloat(m[1]):null,desc:desc||s};
+  }
+  function pctBar(pct,cls){
+    if(pct==null) return '';
+    var p=Math.max(0,Math.min(100,pct));
+    return '<div class="bar '+cls+'"><i style="width:'+p+'%"></i></div>';
+  }
+
+  // ===== 主角页 =====
+  function renderHero(d){
+    var w=d.世界||{}, mc=d.主角||{};
+    var info=mc.基础档案||{}, st=mc.身体与状态||{}, res=mc.资源与位置||{}, ab=mc.能力面板||{};
+    var h='';
+    // 世界
+    $('#w-info').html('<span class="sep">✧</span> '+esc(f(w.时间))+' <span class="sep">✧</span> '+esc(f(w.篇章))+' <span class="sep">✧</span> '+esc(f(w.情节)));
+
+    h+='<div class="lz-panel"><div class="panel-title">🌌 基础档案</div><div class="grid-2">'+
+      '<div><span class="lbl">姓名:</span> <span class="hi">'+esc(f(info.姓名,'User'))+'</span></div>'+
+      '<div><span class="lbl">身份:</span> <span class="val">'+esc(f(info.身份))+'</span></div>'+
+      '<div><span class="lbl">血统:</span> <span class="val" style="color:var(--gold)">'+esc(f(info.血统))+'</span></div>'+
+      '<div><span class="lbl">目标:</span> <span class="val">'+esc(f(info.当前目标,'【无】'))+'</span></div>'+
+      '<div class="full"><span class="lbl">居住:</span> <span class="val">'+esc(f(info.居住))+'</span></div>'+
+      '</div></div>';
+
+    var hp=parsePct(st.身体状况), ki=parsePct(st.气_SP);
+    h+='<div class="lz-panel"><div class="panel-title">🌠 躯体状态</div><div class="grid-2">'+
+      '<div><span class="lbl">HP:</span> <span class="hi">'+(hp.pct!=null?hp.pct+'%':'—')+'</span><span class="val" style="font-size:10px;color:var(--txt-d)"> '+esc(hp.desc)+'</span>'+pctBar(hp.pct,'bar-hp')+'</div>'+
+      '<div><span class="lbl">气(SP):</span> <span class="hi" style="color:var(--cyan)">'+(ki.pct!=null?ki.pct+'%':'—')+'</span><span class="val" style="font-size:10px;color:var(--txt-d)"> '+esc(ki.desc)+'</span>'+pctBar(ki.pct,'bar-ki')+'</div>'+
+      '<div class="full"><span class="lbl">当前变身:</span> <span class="hi-gold">'+esc(f(st.当前变身,'无｜基础形态'))+'</span></div>'+
+      '<div class="full"><span class="lbl">永久损伤/疤痕:</span> <span class="val">'+esc(f(st.身体永久损伤_疤痕,'无'))+'</span></div>'+
+      '</div></div>';
+
+    h+='<div class="lz-panel"><div class="panel-title">📍 资源与位置</div>'+
+      '<div class="row"><span class="lbl">当前位置:</span> <span class="hi">'+esc(f(res.当前位置))+'</span></div>'+
+      '<div class="row"><span class="lbl">持有金钱:</span> <span class="hi-gold">'+esc(f(res.持有金钱,'0'))+' ZENI</span></div>'+
+      '<div class="row"><span class="lbl">当前服装:</span> <span class="val">'+esc(f(res.当前服装))+'</span></div>'+
+      '<div class="grid-2" style="margin-top:4px"><div><span class="lbl">地图节点:</span><div class="lbox">'+renderRecord(res.地图,'未解锁')+'</div></div>'+
+      '<div><span class="lbl">行囊:</span><div class="lbox">'+renderRecord(res.行囊,'行囊为空')+'</div></div></div>'+
+      '<div class="grid-2" style="margin-top:4px"><div><span class="lbl">主线任务:</span><div class="lbox">'+renderRecord((res.任务||{}).Main,'无')+'</div></div>'+
+      '<div><span class="lbl">支线任务:</span><div class="lbox">'+renderRecord((res.任务||{}).Side,'无')+'</div></div></div>'+
+      '</div></div>';
+
+    h+='<div class="lz-panel"><div class="panel-title">⚡ 战斗力</div>'+
+      '<div class="row"><span class="lbl">基础 BP:</span> <span class="hi-gold" style="font-size:16px">'+esc(f(ab.基础战斗力,'0'))+'</span></div>'+
+      '<div class="grid-3" style="margin-top:4px"><div><span class="lbl">战技:</span><div class="lbox">'+renderSkill(ab.掌握战技,'无')+'</div></div>'+
+      '<div><span class="lbl">气功:</span><div class="lbox">'+renderSkill(ab.掌握气功,'无')+'</div></div>'+
+      '<div><span class="lbl">特殊能力:</span><div class="lbox">'+renderSkill(ab.特殊能力,'无')+'</div></div></div>'+
+      '</div></div>';
+
+    return h;
+  }
+
+  // ===== 女性NPC NSFW页 =====
+  function renderFemale(name,c){
+    var info=c.基础档案||{}, st=c.即时状态||{}, num=c.数值面板||{}, cloth=c.衣着装扮||{}, nsfw=c.身体特写||{};
+    var h='';
+    h+='<div class="lz-panel rose"><div class="panel-title rose">💕 '+esc(name)+' <span class="badge badge-f">'+esc(f(info.性别,'女'))+'</span>'+(num.好感度>=50?' <span class="badge badge-tag">常驻</span>':'')+'</div>'+
+      '<div class="row" style="font-size:11px;color:var(--txt-d)"><span class="lbl">身份:</span> <span class="val">'+esc(f(info.身份))+'</span></div></div>';
+
+    // 数值四条
+    function numBar(n,cls,lbl,color){var p=Math.max(0,Math.min(100,n||0));return '<div><span class="r-lbl">'+lbl+':</span> <span class="r-val" style="color:'+color+'">'+(n||0)+'/100</span><div class="bar '+cls+'"><i style="width:'+p+'%"></i></div></div>'}
+    h+='<div class="rose-grid">'+
+      numBar(num.好感度,'bar-rose','💗好感','#ff6fae')+
+      numBar(num.欲望值,'bar-rose','🥵欲望','#ff3b6b')+
+      numBar(num.服从度,'bar-rose','🧎服从','#d24fae')+
+      numBar(num.堕落度,'bar-rose','😈堕落','#a01050')+
+      '</div>';
+
+    h+='<div class="lz-panel rose" style="margin-top:8px"><div class="panel-title rose">💭 即时状态</div>'+
+      '<div class="grid-2">'+
+      '<div class="full"><span class="r-lbl">💦状况:</span> <span class="r-val">'+esc(f(st.状况))+'</span></div>'+
+      '<div><span class="r-lbl">💌态度:</span> <span class="r-val">'+esc(f(st.态度))+'</span></div>'+
+      '<div><span class="r-lbl">🎭情绪:</span> <span class="r-val">'+esc(f(st.情绪))+'</span></div>'+
+      '<div class="full"><span class="r-lbl">😇想法:</span> <span class="r-val" style="font-style:italic">‘'+esc(f(st.想法))+'’</span></div>'+
+      '<div class="full"><span class="r-lbl">👸外表:</span> <span class="r-val">'+esc(f(st.外表))+'</span></div>'+
+      '</div></div>';
+
+    h+='<div class="lz-panel rose"><div class="panel-title rose">🎀 情趣衣着</div><div class="grid-2">'+
+      '<div><span class="r-lbl">上装:</span> <span class="r-val">'+esc(f(cloth.上装))+'</span></div>'+
+      '<div><span class="r-lbl">内衣:</span> <span class="r-val">'+esc(f(cloth.内衣))+'</span></div>'+
+      '<div><span class="r-lbl">内裤:</span> <span class="r-val">'+esc(f(cloth.内裤))+'</span></div>'+
+      '<div><span class="r-lbl">鞋袜:</span> <span class="r-val">'+esc(f(cloth.鞋袜))+'</span></div>'+
+      '<div class="full"><span class="r-lbl">饰品:</span> <span class="r-val">'+esc(f(cloth.饰品))+'</span></div>'+
+      '</div></div>';
+
+    var parts=[['👄樱唇','樱唇'],['🖐️玉手','玉手'],['🍈乳房','乳房'],['🍑屁股','屁股'],['🌼菊穴','菊穴'],['🌰蜜蒂','蜜蒂'],['🌸嫩穴','嫩穴'],['🥚子宫','子宫'],['🦶玉足','玉足']];
+    var ph=parts.map(function(p){return '<div class="rose-item"><span class="r-lbl">'+p[0]+':</span> <span class="r-val">'+esc(f(nsfw[p[1]],'未开发'))+'</span></div>'}).join('');
+    h+='<div class="lz-panel rose"><div class="panel-title rose">💕 肉体开发度</div><div class="rose-box">'+ph+
+      '<div class="rose-item" style="margin-top:4px;border-top:1px solid var(--line-rose);padding-top:4px"><span class="r-lbl">🧘姿势:</span> <span class="r-val">'+esc(f(nsfw.姿势,'待定'))+'</span></div></div></div>';
+    return h;
+  }
+
+  // ===== 男性NPC 战力页 =====
+  function renderMale(name,c){
+    var info=c.基础档案||{}, st=c.即时状态||{}, num=c.数值面板||{}, wp=c.战力状态||{};
+    var h='';
+    h+='<div class="lz-panel"><div class="panel-title">⚔️ '+esc(name)+' <span class="badge badge-m">'+esc(f(info.性别,'男'))+'</span>'+(c.在场===false?' <span class="badge" style="background:rgba(125,150,180,.15);color:var(--txt-d)">离场</span>':'')+'</div>'+
+      '<div class="row" style="font-size:11px;color:var(--txt-d)"><span class="lbl">身份:</span> <span class="val">'+esc(f(info.身份))+'</span></div>'+
+      '<div class="row" style="font-size:11px"><span class="lbl">💗好感:</span> <span class="hi-rose">'+(num.好感度||0)+'/100</span> · <span class="lbl">态度:</span> <span class="val">'+esc(f(st.态度))+'</span></div></div>';
+
+    var hp=parsePct(wp.身体状况), ki=parsePct(wp.气_SP);
+    h+='<div class="lz-panel"><div class="panel-title">🌠 躯体与气</div><div class="grid-2">'+
+      '<div><span class="lbl">HP:</span> <span class="hi">'+(hp.pct!=null?hp.pct+'%':'—')+'</span><span style="font-size:10px;color:var(--txt-d)"> '+esc(hp.desc)+'</span>'+pctBar(hp.pct,'bar-hp')+'</div>'+
+      '<div><span class="lbl">气(SP):</span> <span class="hi" style="color:var(--cyan)">'+(ki.pct!=null?ki.pct+'%':'—')+'</span><span style="font-size:10px;color:var(--txt-d)"> '+esc(ki.desc)+'</span>'+pctBar(ki.pct,'bar-ki')+'</div>'+
+      '<div class="full"><span class="lbl">当前变身:</span> <span class="hi-gold">'+esc(f(wp.当前变身,'无｜基础形态'))+'</span></div>'+
+      '</div></div>';
+
+    h+='<div class="lz-panel"><div class="panel-title">⚡ 战斗力</div>'+
+      '<div class="row"><span class="lbl">基础 BP:</span> <span class="hi-gold" style="font-size:16px">'+esc(f(wp.基础战斗力,'0'))+'</span></div>'+
+      '<div class="grid-3" style="margin-top:4px"><div><span class="lbl">战技:</span><div class="lbox">'+renderSkill(wp.掌握战技,'无')+'</div></div>'+
+      '<div><span class="lbl">气功:</span><div class="lbox">'+renderSkill(wp.掌握气功,'无')+'</div></div>'+
+      '<div><span class="lbl">特殊能力:</span><div class="lbox">'+renderSkill(wp.特殊能力,'无')+'</div></div></div>'+
+      '</div>';
+    return h;
+  }
+
+  // ===== 翻页状态 =====
+  var pages=[]; // [{type:'hero'|'npc', name, char}]
+  var pageIdx=0;
+
+  function buildPages(d){
+    pages=[{type:'hero'}];
+    var db=d.角色互动库||{};
+    Object.keys(db).forEach(function(name){
+      var c=db[name]||{};
+      // 在场 OR (女性且好感≥50) 才显示
+      var onScene = c.在场!==false;
+      var isFemale = (c.类型||'女')==='女';
+      var sticky = isFemale && (c.数值面板||{}).好感度>=50;
+      if(onScene || sticky){
+        pages.push({type:'npc', name:name, char:c, female:isFemale});
+      }
+    });
+  }
+
+  function renderPage(){
+    var body=$('#page-body');
+    if(!pages.length){body.html('<div class="empty">等待数据…</div>');return}
+    if(pageIdx<0)pageIdx=pages.length-1;
+    if(pageIdx>=pages.length)pageIdx=0;
+    var p=pages[pageIdx];
+    if(p.type==='hero'){
+      $('#nav-title').text('主角');
+      body.html(renderHero(window.__lzData));
+    }else{
+      $('#nav-title').html(esc(p.name)+' <span class="badge '+(p.female?'badge-f':'badge-m')+'">'+(p.female?'NSFW':'战力')+'</span>');
+      body.html(p.female?renderFemale(p.name,p.char):renderMale(p.name,p.char));
+    }
+    $('#nav-page').text((pageIdx+1)+'/'+pages.length);
+  }
+
+  function refresh(){
+    var d=readLatestStatData();
+    if(!d||!d.主角){$('#w-info').text('等待 stat_data…');return}
+    window.__lzData=d;
+    // 翻页前先记录当前页名字，重建后尽量停在同一页
+    var curName = pages[pageIdx] && pages[pageIdx].name;
+    buildPages(d);
+    if(curName){
+      var i=pages.findIndex(function(x){return x.name===curName});
+      if(i>=0) pageIdx=i;
+    }
+    renderPage();
+  }
+
+  async function init(){
+    try{await waitGlobalInitialized('Mvu')}catch(e){console.warn('[龙珠状态栏] waitGlobalInitialized',e)}
+    refresh();
+    $('#btn-prev').on('click',function(){pageIdx--;renderPage()});
+    $('#btn-next').on('click',function(){pageIdx++;renderPage()});
+    try{
+      var mv=window.Mvu;
+      if(mv&&mv.events&&mv.events.VARIABLE_UPDATE_ENDED&&typeof window.eventOn==='function'){
+        window.eventOn(mv.events.VARIABLE_UPDATE_ENDED,refresh);
+        console.log('[龙珠状态栏] 已订阅 VARIABLE_UPDATE_ENDED');
+      }
+    }catch(e){console.error('[龙珠状态栏] 订阅失败',e)}
+    setInterval(refresh,1500);
+    console.log('[龙珠状态栏] 初始化完成');
+  }
+  if(typeof errorCatched==='function') $(errorCatched(init)); else $(init);
+})();
+</script>
+</head>
+</html>
