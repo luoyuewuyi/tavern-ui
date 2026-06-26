@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>无限流 · 适格者设定</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root{
+  --bg-deep:#05050f;
+  --surface:rgba(14,14,36,0.88);
+  --surface-hover:rgba(20,20,52,0.92);
+  --border:rgba(100,150,255,0.18);
+  --border-focus:rgba(120,160,255,0.5);
+  --text:#d0d6ea;
+  --text-dim:#5c6480;
+  --accent:#6088e8;
+  --accent2:#8b5cf6;
+  --accent-glow:rgba(96,136,232,0.35);
+  --gold:#e0b044;
+  --gold-glow:rgba(224,176,68,0.25);
+  --danger:#ef4444;
+  --danger-glow:rgba(239,68,68,0.2);
+  --success:#34d399;
+  --rds:14px;
+  --rds-sm:8px;
+  --transition:0.25s cubic-bezier(0.25,0.46,0.45,0.94);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Noto Sans SC',-apple-system,sans-serif;
+  background:var(--bg-deep);
+  color:var(--text);
+  line-height:1.6;
+  min-height:100vh;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+#bgCanvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.main-shell{
+  position:relative;z-index:1;
+  max-width:960px;margin:0 auto;
+  height:100vh;display:flex;flex-direction:column;
+  padding:6px 12px;
+}
+.header{
+  text-align:center;padding:14px 0 8px;flex-shrink:0;
+  position:relative;
+}
+.header .logo{
+  font-family:'Orbitron',monospace;
+  font-size:1.8rem;font-weight:800;
+  background:linear-gradient(135deg,#80b0ff 0%,#a78bfa 40%,#60a5fa 70%,#c4b5fd 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  letter-spacing:3px;
+  filter:drop-shadow(0 0 18px rgba(120,150,255,0.5));
+  animation:titlePulse 3s ease-in-out infinite;
+}
+@keyframes titlePulse{
+  0%,100%{filter:drop-shadow(0 0 18px rgba(120,150,255,0.5))}
+  50%{filter:drop-shadow(0 0 30px rgba(160,180,255,0.8))}
+}
+.header .sub{
+  font-size:0.82rem;color:var(--text-dim);
+  margin-top:2px;letter-spacing:1px;
+}
+.header .sub i{color:var(--accent);margin:0 3px}
+.scroll-area{
+  flex:1;overflow-y:auto;min-height:0;padding-right:6px;
+  scrollbar-width:thin;scrollbar-color:rgba(100,140,255,0.18) transparent;
+}
+.scroll-area::-webkit-scrollbar{width:4px}
+.scroll-area::-webkit-scrollbar-thumb{background:rgba(100,140,255,0.18);border-radius:3px}
+.scroll-area::-webkit-scrollbar-track{background:transparent}
+
+.section{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--rds);
+  padding:18px 20px;
+  margin-bottom:12px;
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  transition:border var(--transition),box-shadow var(--transition);
+}
+.section:hover{border-color:rgba(120,160,255,0.28);box-shadow:0 4px 24px rgba(80,120,240,0.06)}
+.sec-title{
+  font-size:0.9rem;font-weight:700;
+  background:linear-gradient(135deg,#9cb8ff,#b4a0ff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  margin-bottom:12px;display:flex;align-items:center;gap:8px;
+  letter-spacing:0.5px;
+}
+.sec-title i{font-size:0.85rem;color:var(--accent);-webkit-text-fill-color:initial}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px}
+.form-row.single{grid-template-columns:1fr}
+.form-row.triple{grid-template-columns:1fr 1fr 1fr}
+.fg{display:flex;flex-direction:column}
+.fg.full{grid-column:1/-1}
+.fg label{
+  font-size:0.76rem;color:var(--text-dim);margin-bottom:4px;
+  font-weight:500;letter-spacing:0.3px;
+  display:flex;align-items:center;gap:4px;
+}
+.fg label i{font-size:0.65rem;color:var(--accent);opacity:0.7}
+input,select,textarea{
+  background:rgba(8,8,24,0.7);border:1px solid var(--border);
+  border-radius:var(--rds-sm);color:var(--text);
+  padding:9px 12px;font-size:0.84rem;font-family:inherit;
+  outline:none;transition:all var(--transition);
+}
+input:hover,select:hover,textarea:hover{border-color:rgba(120,150,255,0.3)}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--border-focus);
+  box-shadow:0 0 0 3px var(--accent-glow),inset 0 0 0 1px rgba(120,150,255,0.05);
+}
+textarea{resize:vertical;min-height:64px}
+
+.radio-group{display:flex;gap:6px;flex-wrap:wrap}
+.radio-btn{
+  flex:1;min-width:70px;padding:9px 6px;text-align:center;
+  background:rgba(8,8,24,0.6);border:1px solid var(--border);
+  border-radius:var(--rds-sm);color:var(--text-dim);font-size:0.78rem;
+  cursor:pointer;transition:all var(--transition);user-select:none;
+  font-weight:500;
+}
+.radio-btn:hover{border-color:rgba(120,150,255,0.4);color:var(--text);background:rgba(16,16,40,0.7)}
+.radio-btn.active{
+  background:linear-gradient(135deg,rgba(96,136,232,0.2),rgba(139,92,246,0.15));
+  border-color:var(--accent);color:#b0c8ff;
+  box-shadow:0 0 12px var(--accent-glow);
+}
+
+.stat-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.stat-label{width:52px;font-size:0.78rem;color:var(--text);font-weight:500}
+.stat-val{
+  width:44px;text-align:center;
+  background:rgba(8,8,24,0.7);border:1px solid var(--border);
+  border-radius:var(--rds-sm);color:var(--gold);padding:5px 2px;
+  font-size:0.82rem;font-weight:600;font-family:'Orbitron',monospace;
+}
+.stat-btn{
+  width:24px;height:24px;border-radius:50%;
+  border:1px solid var(--border);background:rgba(8,8,24,0.7);
+  color:var(--text-dim);font-size:0.8rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all var(--transition);flex-shrink:0;
+}
+.stat-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(96,136,232,0.15)}
+.stat-btn:active{transform:scale(0.92)}
+.stat-bar-wrap{
+  flex:1;height:4px;background:rgba(255,255,255,0.04);
+  border-radius:2px;overflow:hidden;cursor:pointer;
+}
+.stat-bar-fill{height:100%;border-radius:2px;background:var(--accent);transition:width 0.35s;min-width:0}
+.stat-bar-fill.high{background:linear-gradient(90deg,var(--gold),#f0c060)}
+.points-left{
+  text-align:center;font-size:0.84rem;color:var(--gold);padding:4px 0 6px;font-weight:600;
+  letter-spacing:0.5px;
+}
+
+.toggle-wrap{
+  display:flex;align-items:center;justify-content:space-between;padding:6px 0;
+  border-bottom:1px solid rgba(255,255,255,0.02);
+}
+.toggle-wrap:last-child{border-bottom:none}
+.toggle-label{font-size:0.82rem;color:var(--text)}
+.toggle-switch{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-track{
+  position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;
+  background:rgba(255,255,255,0.06);border-radius:12px;transition:0.3s;
+  border:1px solid rgba(255,255,255,0.06);
+}
+.toggle-track:before{
+  content:'';position:absolute;height:16px;width:16px;border-radius:50%;
+  left:3px;bottom:3px;background:#666;transition:0.3s;
+}
+.toggle-switch input:checked+.toggle-track{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent}
+.toggle-switch input:checked+.toggle-track:before{transform:translateX(20px);background:#fff;box-shadow:0 0 6px rgba(255,255,255,0.4)}
+
+.dir-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.dir-tag{
+  padding:5px 12px;border-radius:20px;
+  border:1px solid var(--border);background:rgba(8,8,24,0.5);
+  color:var(--text-dim);font-size:0.76rem;cursor:pointer;
+  transition:all var(--transition);font-weight:500;
+}
+.dir-tag:hover{border-color:rgba(120,150,255,0.4);color:var(--text)}
+.dir-tag.active{
+  background:linear-gradient(135deg,rgba(96,136,232,0.22),rgba(139,92,246,0.15));
+  border-color:var(--accent);color:#b0c8ff
+}
+
+.hint-text{font-size:0.74rem;color:var(--text-dim);margin-top:6px;line-height:1.5}
+.hint-warn{color:var(--gold);margin-top:6px;font-size:0.76rem;font-weight:500}
+
+.submit-bar{flex-shrink:0;padding:10px 0 8px;text-align:center}
+.btn-submit{
+  background:linear-gradient(135deg,#5078d8,#7055e8);
+  color:#fff;border:none;padding:14px 50px;border-radius:var(--rds);
+  font-size:1.05rem;font-weight:700;cursor:pointer;letter-spacing:2px;
+  transition:all var(--transition);
+  box-shadow:0 4px 28px rgba(96,120,232,0.4);
+  font-family:'Noto Sans SC',sans-serif;
+}
+.btn-submit:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 40px rgba(120,140,255,0.6);
+}
+.btn-submit:active{transform:translateY(0)}
+.btn-submit:disabled{opacity:0.35;cursor:not-allowed;transform:none}
+.btn-submit i{margin-right:6px}
+
+.rando-count{display:flex;align-items:center;gap:8px;margin-top:8px}
+.rando-count span{font-size:0.78rem;color:var(--text-dim)}
+.rando-count select{width:90px}
+
+#talentRandom,#talentNone,#anchorCustom{display:none}
+
+@media(max-width:520px){
+  .form-row{grid-template-columns:1fr}
+  .stat-label{width:42px}
+  .header .logo{font-size:1.4rem}
+}
+</style>
+</head>
+<body>
+<canvas id="bgCanvas"></canvas>
+<div class="main-shell">
+<div class="header">
+  <div class="logo">I N F I N I T E</div>
+  <div class="sub"><i class="fa-solid fa-circle-nodes"></i> 适格者觉醒协议 <i class="fa-solid fa-circle-nodes"></i></div>
+</div>
+<div class="scroll-area">
+
+<div class="section">
+  <div class="sec-title"><i class="fa-solid fa-user-astronaut"></i> 基础信息</div>
+  <div class="form-row">
+    <div class="fg"><label><i class="fa-solid fa-signature"></i> 姓名</label><input type="text" id="pName" placeholder="输入主角姓名"></div>
+    <div class="fg"><label><i class="fa-solid fa-calendar"></i> 年龄</label><input type="number" id="pAge" value="18" min="1" max="999"></div>
+  </div>
+  <div class="form-row">
+    <div class="fg"><label><i class="fa-solid fa-venus-mars"></i> 性别</label><input type="text" id="pGender" placeholder="男 / 女 / 其他"></div>
+    <div class="fg"><label><i class="fa-solid fa-eye"></i> 外貌特征</label><input type="text" id="pAppear" placeholder="身高 · 体型 · 长相 · 特征"></div>
+  </div>
+  <div class="form-row single">
+    <div class="fg full"><label><i class="fa-solid fa-brain"></i> 性格与行为模式</label><textarea id="pPersonality" placeholder="描述主角的性格、行为习惯、处世方式…&#10;例如：表面冷静内心热血、对陌生人警惕但对信任的人无条件付出、擅长在危急时刻做出快速决策"></textarea></div>
+  </div>
+  <div class="form-row single">
+    <div class="fg full"><label><i class="fa-solid fa-book"></i> 人设补充 <span style="font-weight:300;font-size:0.7rem">（选填）</span></label><textarea id="pExtra" placeholder="补充背景：家庭 / 职业经历 / 特殊身世 / 世界观设定…"></textarea></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-title"><i class="fa-solid fa-star"></i> 天赋 · 金手指</div>
+  <div class="radio-group" id="talentMode">
+    <div class="radio-btn active" data-mode="input"><i class="fa-solid fa-pen-to-square"></i> 手动输入</div>
+    <div class="radio-btn" data-mode="random"><i class="fa-solid fa-dice"></i> 随机生成</div>
+    <div class="radio-btn" data-mode="none"><i class="fa-solid fa-xmark"></i> 不要天赋</div>
+  </div>
+  <div id="talentManual">
+    <div class="form-row single" style="margin-top:8px">
+      <div class="fg full"><label>每行一个天赋（格式：天赋名 — 简短描述）</label><textarea id="talentInput" placeholder="例如：&#10;危险嗅觉 — 感知半径30米内对自己有杀意的存在&#10;钢铁意志 — 精神判定+20%，免疫轻度恐惧控制&#10;火焰操控 — 可点燃并操控小型火焰（手掌大小）"></textarea></div>
+    </div>
+  </div>
+  <div id="talentRandom">
+    <div class="rando-count"><span>随机数量：</span><select id="randCount"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option></select></div>
+    <div style="margin-top:8px"><span style="font-size:0.76rem;color:var(--text-dim)">方向偏好（可多选，不选 = 全随机）</span></div>
+    <div class="dir-tags" id="talentDirs">
+      <span class="dir-tag" data-dir="战斗"><i class="fa-solid fa-sword"></i> 战斗</span>
+      <span class="dir-tag" data-dir="生存"><i class="fa-solid fa-shield-haltered"></i> 生存</span>
+      <span class="dir-tag" data-dir="感知"><i class="fa-solid fa-eye"></i> 感知</span>
+      <span class="dir-tag" data-dir="操控"><i class="fa-solid fa-wand-sparkles"></i> 操控</span>
+      <span class="dir-tag" data-dir="辅助"><i class="fa-solid fa-wrench"></i> 辅助</span>
+      <span class="dir-tag" data-dir="特殊"><i class="fa-solid fa-gem"></i> 特殊</span>
+    </div>
+  </div>
+  <div id="talentNone"><div class="hint-warn"><i class="fa-solid fa-triangle-exclamation"></i> 不携带天赋进入无限流——极高难度挑战。可能获得隐藏补偿：属性起始+5、经验获取+50%等。</div></div>
+</div>
+
+<div class="section">
+  <div class="sec-title"><i class="fa-solid fa-compass"></i> 模式选择</div>
+  <div class="radio-group" id="modeGroup">
+    <div class="radio-btn active" data-mode="单人冒险"><i class="fa-solid fa-person-walking"></i> 单人冒险</div>
+    <div class="radio-btn" data-mode="多人冒险"><i class="fa-solid fa-people-group"></i> 多人冒险</div>
+    <div class="radio-btn" data-mode="单人多人空间"><i class="fa-solid fa-globe"></i> 单人 · 多人空间</div>
+  </div>
+  <div class="hint-text" id="modeDesc">只有主角一人进入副本，无队友。适合专注的个人成长路线。</div>
+</div>
+
+<div class="section">
+  <div class="sec-title"><i class="fa-solid fa-house"></i> 锚点世界</div>
+  <div class="radio-group" id="anchorGroup">
+    <div class="radio-btn active" data-anchor="主神空间"><i class="fa-solid fa-building-columns"></i> 主神空间</div>
+    <div class="radio-btn" data-anchor="乐园空间"><i class="fa-solid fa-tree"></i> 乐园空间</div>
+    <div class="radio-btn" data-anchor="直连模式"><i class="fa-solid fa-link"></i> 直连模式</div>
+    <div class="radio-btn" data-anchor="地球都市"><i class="fa-solid fa-city"></i> 地球都市</div>
+    <div class="radio-btn" data-anchor="自定义"><i class="fa-solid fa-pen"></i> 自定义</div>
+  </div>
+  <div id="anchorCustom" style="margin-top:8px"><textarea id="anchorCustomDesc" placeholder="描述你想要的锚点空间类型与规则…"></textarea></div>
+</div>
+
+<div class="section">
+  <div class="sec-title"><i class="fa-solid fa-chart-simple"></i> 属性分配 <span style="font-size:0.7rem;color:var(--text-dim);font-weight:400">（基准 5 = 普通成年人）</span></div>
+  <div class="points-left">剩余属性点 <strong id="ptsLeft" style="font-size:1.05rem">30</strong></div>
+  <div id="statList"></div>
+</div>
+
+<div class="section">
+  <div class="sec-title"><i class="fa-solid fa-sliders"></i> 系统开关</div>
+  <div class="toggle-wrap"><span class="toggle-label">积分系统</span><label class="toggle-switch"><input type="checkbox" id="swPoints" checked><span class="toggle-track"></span></label></div>
+  <div class="toggle-wrap"><span class="toggle-label">商城系统</span><label class="toggle-switch"><input type="checkbox" id="swShop" checked><span class="toggle-track"></span></label></div>
+  <div class="toggle-wrap"><span class="toggle-label">任务系统</span><label class="toggle-switch"><input type="checkbox" id="swTask" checked><span class="toggle-track"></span></label></div>
+  <div class="form-row" style="margin-top:8px">
+    <div class="fg"><label>主线任务长度</label><select id="mainLength"><option value="长" selected>长（15~30 节点）</option><option value="短">短（5~10 节点）</option><option value="无">无（纯自由探索）</option></select></div>
+    <div class="fg"><label>随机触发任务</label><select id="swRandTask"><option value="true">开启</option><option value="false">关闭</option></select></div>
+  </div>
+  <div class="form-row">
+    <div class="fg"><label>骰子显示模式</label><select id="diceMode"><option value="详细">详细（完整判定过程）</option><option value="简述">简述（正文带过）</option><option value="隐藏">隐藏（纯叙事）</option></select></div>
+    <div class="fg"><label>商城商品倾向</label><select id="shopBias"><option value="无倾向" selected>无倾向（全随机）</option><option value="东方仙侠">偏向东方仙侠</option><option value="科技侧">偏向科技侧</option><option value="魔法侧">偏向魔法侧</option><option value="生存辅助">偏向生存辅助</option></select></div>
+  </div>
+</div>
+
+</div>
+<div class="submit-bar">
+  <button class="btn-submit" id="btnSubmit" onclick="submitForm()"><i class="fa-solid fa-bolt"></i>觉醒 · 进入无限流</button>
+</div>
+</div>
+<script>
+(function(){
+window.STATS=['力量','敏捷','体质','精神','智力','魅力'];
+window.statVals={力量:5,敏捷:5,体质:5,精神:5,智力:5,魅力:5};
+window.totalPts=30;
+function rStatList(){
+  var h='',used=Object.values(window.statVals).reduce(function(a,b){return a+b},0)-30;
+  document.getElementById('ptsLeft').textContent=window.totalPts-used;
+  window.STATS.forEach(function(s){
+    var pct=Math.min(window.statVals[s]/30*100,100);
+    h+='<div class="stat-row"><span class="stat-label">'+s+'</span><span class="stat-btn" onclick="window.adjStat(\''+s+'\',-1)">−</span><input class="stat-val" value="'+window.statVals[s]+'" onchange="window.setStat(\''+s+'\',this.value)"><span class="stat-btn" onclick="window.adjStat(\''+s+'\',1)">+</span><div class="stat-bar-wrap" onclick="window.adjStat(\''+s+'\',1)"><div class="stat-bar-fill'+(window.statVals[s]>15?' high':'')+'" style="width:'+pct+'%"></div></div></div>';
+  });
+  document.getElementById('statList').innerHTML=h;
+}
+window.adjStat=function(s,d){
+  var used=Object.values(window.statVals).reduce(function(a,b){return a+b},0)-30;
+  if(d>0&&used>=window.totalPts)return;if(d<0&&window.statVals[s]<=1)return;
+  window.statVals[s]+=d;rStatList();
+};
+window.setStat=function(s,v){
+  var n=parseInt(v);if(isNaN(n)||n<1)return;
+  var old=window.statVals[s];window.statVals[s]=n;
+  var used=Object.values(window.statVals).reduce(function(a,b){return a+b},0)-30;
+  if(used>window.totalPts){window.statVals[s]=old;return}
+  rStatList();
+};
+};
+rStatList();
+
+document.querySelectorAll('.radio-btn').forEach(function(b){
+  b.addEventListener('click',function(){
+    var g=this.parentElement;
+    g.querySelectorAll('.radio-btn').forEach(function(c){c.classList.remove('active')});
+    this.classList.add('active');
+    var mode=this.dataset.mode||this.dataset.anchor;
+    if(g.id==='talentMode'){
+      document.getElementById('talentManual').style.display=mode==='input'?'block':'none';
+      document.getElementById('talentRandom').style.display=mode==='random'?'block':'none';
+      document.getElementById('talentNone').style.display=mode==='none'?'block':'none';
+    }
+    if(g.id==='anchorGroup'){
+      document.getElementById('anchorCustom').style.display=mode==='自定义'?'block':'none';
+    }
+    if(g.id==='modeGroup'){
+      var descs={'单人冒险':'只有主角一人进入副本，无队友。适合专注的个人成长路线。','多人冒险':'生成 2~5 个 NPC 队友与你一同进入副本。可随时间加入更多。','单人多人空间':'主角单人进入但副本中有其他玩家 NPC，可自由组队或对抗。'};
+      document.getElementById('modeDesc').textContent=descs[mode]||'';
+    }
+  });
+});
+document.querySelectorAll('.dir-tag').forEach(function(t){
+  t.addEventListener('click',function(){this.classList.toggle('active')});
+});
+})();
+
+function buildPayload(){
+  var p=[];
+  p.push('[适格者设定]');
+  p.push('姓名: '+(document.getElementById('pName').value||'{{user}}'));
+  p.push('年龄: '+(document.getElementById('pAge').value||'18'));
+  p.push('性别: '+(document.getElementById('pGender').value||'未设定'));
+  p.push('外貌特征: '+(document.getElementById('pAppear').value||'未设定'));
+  p.push('性格行为模式: '+(document.getElementById('pPersonality').value||'未设定'));
+  p.push('人设补充: '+(document.getElementById('pExtra').value||'无'));
+  var tmode=document.querySelector('#talentMode .radio-btn.active').dataset.mode;
+  p.push('天赋模式: '+tmode);
+  if(tmode==='input'){
+    p.push('天赋设定:\n'+(document.getElementById('talentInput').value||'未填写'));
+  }else if(tmode==='random'){
+    var dirs=[];document.querySelectorAll('#talentDirs .dir-tag.active').forEach(function(d){dirs.push(d.dataset.dir)});
+    p.push('随机天赋数量: '+document.getElementById('randCount').value);
+    p.push('随机方向偏好: '+(dirs.length?dirs.join('、'):'全随机'));
+  }else{
+    p.push('天赋设定: 不要天赋（挑战模式）');
+  }
+  p.push('模式: '+document.querySelector('#modeGroup .radio-btn.active').dataset.mode);
+  var anchor=document.querySelector('#anchorGroup .radio-btn.active').dataset.anchor;
+  p.push('锚点空间: '+anchor);
+  if(anchor==='自定义'){p.push('自定义锚点描述: '+(document.getElementById('anchorCustomDesc').value||'未填写'))}
+  window.STATS.forEach(function(s){p.push(s+': '+window.statVals[s])});
+  p.push('剩余属性点: '+document.getElementById('ptsLeft').textContent);
+  p.push('积分系统: '+(document.getElementById('swPoints').checked?'开启':'关闭'));
+  p.push('商城系统: '+(document.getElementById('swShop').checked?'开启':'关闭'));
+  p.push('任务系统: '+(document.getElementById('swTask').checked?'开启':'关闭'));
+  p.push('主线长度: '+document.getElementById('mainLength').value);
+  p.push('随机任务: '+(document.getElementById('swRandTask').value==='true'?'开启':'关闭'));
+  p.push('骰子显示: '+document.getElementById('diceMode').value);
+  p.push('商城倾向: '+document.getElementById('shopBias').value);
+  return p.join('\n');
+}
+
+window.submitForm=function(){
+  var btn=document.getElementById('btnSubmit');
+  btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> 正在觉醒…';
+  var payload=buildPayload();
+  try{
+    var w=window,pw=(w.parent&&w.parent!==w)?w.parent:w;
+    var doc=pw.document||document;
+    var ta=doc.querySelector('#send_textarea');
+    if(ta){
+      var proto=(pw.HTMLTextAreaElement||w.HTMLTextAreaElement).prototype;
+      Object.getOwnPropertyDescriptor(proto,'value').set.call(ta,payload);
+      ta.dispatchEvent(new Event('input',{bubbles:true}));
+      setTimeout(function(){doc.querySelector('#send_button')?.click()},80);
+    }else if(typeof w.createChatMessages==='function'){
+      w.createChatMessages([{role:'user',message:payload}]);
+      setTimeout(function(){try{w.generate?.()}catch(e){}},120);
+    }
+  }catch(e){console.error('[开局界面]发送失败',e);alert('发送失败')}
+  btn.innerHTML='<i class="fa-solid fa-check"></i> 已发送 · 等待 AI 回应…';
+};
+
+// Nebula background
+(function(){
+var c=document.getElementById('bgCanvas'),ctx=c.getContext('2d'),w,h,pts=[],lines=[];
+function rz(){
+  w=c.width=c.offsetWidth;h=c.height=c.offsetHeight;
+  pts=[];lines=[];
+  for(var i=0;i<80;i++){pts.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.4+0.3,s:Math.random()*0.35+0.08,a:Math.random()*0.55+0.2,hue:200+Math.random()*60})}
+  for(var i=0;i<12;i++){lines.push({x1:Math.random()*w,y1:Math.random()*h,x2:Math.random()*w,y2:Math.random()*h,ox:Math.random()*0.3-0.15,oy:Math.random()*0.3-0.15,a:Math.random()*0.07+0.02})}
+}
+rz();window.addEventListener('resize',rz);
+function dr(){
+  ctx.clearRect(0,0,w,h);
+  lines.forEach(function(l){
+    l.x1+=l.ox;l.y1+=l.oy;l.x2+=l.ox;l.y2+=l.oy;
+    if(l.x1<-50)l.x1=w+50;if(l.x1>w+50)l.x1=-50;if(l.y1<-50)l.y1=h+50;if(l.y1>h+50)l.y1=-50;
+    if(l.x2<-50)l.x2=w+50;if(l.x2>w+50)l.x2=-50;if(l.y2<-50)l.y2=h+50;
+    ctx.beginPath();ctx.moveTo(l.x1,l.y1);ctx.lineTo(l.x2,l.y2);
+    ctx.strokeStyle='rgba(100,140,200,'+l.a+')';ctx.lineWidth=0.6;ctx.stroke();
+  });
+  pts.forEach(function(p){
+    p.y-=p.s;if(p.y<-10){p.y=h+10;p.x=Math.random()*w}
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    var grad=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*3);
+    grad.addColorStop(0,'hsla('+p.hue+',80%,70%,'+p.a+')');
+    grad.addColorStop(1,'hsla('+p.hue+',80%,70%,0)');
+    ctx.fillStyle=grad;ctx.fill();
+  });
+  requestAnimationFrame(dr);
+}
+dr();
+})();
+</script>
+</body>
+</html>
