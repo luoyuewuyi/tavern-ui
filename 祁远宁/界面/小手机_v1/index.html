@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>祁远宁的手机</title>
+</head>
+<body style="margin:0;background:#000">
+<div id="qyn-phone" style="max-width:380px;margin:0 auto;background:#000;min-height:100vh"></div>
+<script type="module">
+"use strict";
+(() => {
+  // src/data.ts
+  function extractStatData(v) {
+    if (!v) return null;
+    if (v.stat_data && typeof v.stat_data === "object") return v.stat_data;
+    return null;
+  }
+  function readStatData() {
+    try {
+      const cur = window.getVariables?.({ type: "message" });
+      const d = extractStatData(cur);
+      if (d && d.祁远宁) return d;
+    } catch (e) {
+      console.error("[小手机] getVariables", e);
+    }
+    try {
+      const mv = window.Mvu;
+      if (mv?.getMvuData) {
+        const d2 = extractStatData(mv.getMvuData({ type: "message", message_id: -1 }));
+        if (d2 && d2.祁远宁) return d2;
+      }
+    } catch (e) {
+      console.error("[小手机] getMvuData", e);
+    }
+    try {
+      const all = window.getAllVariables?.();
+      const d3 = extractStatData(all);
+      if (d3 && d3.祁远宁) return d3;
+    } catch (e) {
+      console.error("[小手机] getAllVariables", e);
+    }
+    return null;
+  }
+  function subscribeUpdate(cb) {
+    try {
+      const mv = window.Mvu;
+      if (mv?.events?.VARIABLE_UPDATE_ENDED && typeof window.eventOn === "function") {
+        window.eventOn(mv.events.VARIABLE_UPDATE_ENDED, cb);
+        console.log("[小手机] 已订阅 VARIABLE_UPDATE_ENDED");
+      }
+    } catch (e) {
+      console.error("[小手机] 订阅失败", e);
+    }
+  }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[<>&]/g, (c) => c === "<" ? "&lt;" : c === ">" ? "&gt;" : "&amp;");
+  }
+  function f(v, df) {
+    return v || v === 0 ? String(v) : df != null ? df : "—";
+  }
+
+  // src/ui.ts
+  var activeModule = "home";
+  var rootEl = null;
+  function getActiveModule() {
+    return activeModule;
+  }
+  var STYLES = `
+:root{
+  --bg:#0a0a12; --panel:#15151f; --panel2:#1d1d2a; --line:rgba(120,90,160,.18);
+  --gold:#c9a96e; --rose:#e8a0b8; --blue:#7aa2d9; --green:#8fbf9f;
+  --txt:#e8e0d8; --txt-d:#8a8294; --txt-dd:#5a5468;
+  --accent:#8b6fae; --accent2:#6a5290;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+.phone-body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;color:var(--txt);font-size:13px;line-height:1.5}
+.scr{background:linear-gradient(180deg,#0c0c16,#13131e);min-height:560px;max-height:560px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
+.scr::-webkit-scrollbar{width:3px}.scr::-webkit-scrollbar-thumb{background:var(--accent);border-radius:2px}
+.statusbar{display:flex;justify-content:space-between;padding:6px 14px;font-size:11px;color:var(--txt-d);background:#000}
+.header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+.header h1{font-size:15px;font-weight:700;color:var(--gold);letter-spacing:1px}
+.header .back{color:var(--accent);cursor:pointer;font-size:18px}
+.tabbar{display:flex;background:var(--panel);border-top:1px solid var(--line);position:sticky;bottom:0}
+.tabbar .tab{flex:1;text-align:center;padding:8px 0 10px;font-size:11px;color:var(--txt-d);cursor:pointer;transition:.2s}
+.tabbar .tab:hover{color:var(--gold)}
+.tabbar .tab.active{color:var(--gold)}
+.tabbar .tab i{display:block;font-size:17px;margin-bottom:3px}
+.home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 8px;padding:16px}
+.home-app{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;transition:.2s}
+.home-app:hover{transform:translateY(-2px)}
+.home-app .icon{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.3)}
+.home-app .name{font-size:11px;color:var(--txt-d)}
+.notify{position:relative}
+.notify .badge{position:absolute;top:-3px;right:-3px;background:#e85a6a;color:#fff;font-size:9px;min-width:15px;height:15px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+.widget{margin:10px;padding:12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+.widget .w-title{font-size:11px;color:var(--txt-d);margin-bottom:6px}
+.list{padding:0 12px}
+.item{padding:11px 12px;border-bottom:1px solid rgba(120,90,160,.08);background:var(--panel2);margin-bottom:6px;border-radius:8px}
+.item:last-child{border-bottom:none}
+.chat-row{display:flex;gap:10px}
+.avatar{width:38px;height:38px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:700}
+.bubble{background:#2a2a3a;padding:8px 12px;border-radius:0 12px 12px 12px;max-width:75%;font-size:13px;margin:4px 0;word-break:break-word}
+.bubble.me{background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:12px 0 12px 12px;margin-left:auto}
+.chat-time{font-size:10px;color:var(--txt-dd);text-align:center;margin:6px 0}
+.post{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+.post .p-head{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.post .p-name{font-weight:700;font-size:13px}
+.post .p-time{font-size:10px;color:var(--txt-dd)}
+.post .p-body{font-size:13px;line-height:1.6;margin-bottom:8px;white-space:pre-wrap}
+.post .p-stats{display:flex;gap:18px;font-size:11px;color:var(--txt-d)}
+.cmt{padding:8px 10px;background:rgba(0,0,0,.2);border-radius:6px;margin-top:5px;font-size:12px}
+.cmt .c-user{color:var(--blue);font-weight:600;margin-right:6px}
+.empty{color:var(--txt-dd);text-align:center;padding:40px 0;font-style:italic;font-size:12px}
+.relation-card{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px}
+.relation-card .rc{background:var(--panel2);padding:8px;border-radius:6px;text-align:center}
+.rc .v{font-size:16px;font-weight:700;color:var(--gold)}
+.rc .l{font-size:10px;color:var(--txt-d)}
+.bar{height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin-top:3px}
+.bar>i{display:block;height:100%;border-radius:3px}
+.npc-card{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px}
+.npc-card .n-name{font-weight:700;color:var(--rose);font-size:13px}
+.npc-card .n-mind{font-size:12px;color:var(--txt-d);font-style:italic;margin-top:4px;border-left:2px solid var(--rose);padding-left:7px}
+`;
+  var APP_ICONS = {
+    wechat: { icon: "💬", color: "#07c160" },
+    group: { icon: "👥", color: "#7aa2d9" },
+    moments: { icon: "📸", color: "#ff7e3f" },
+    weibo: { icon: "🌐", color: "#e6162d" },
+    forum: { icon: "📰", color: "#c9a96e" },
+    album: { icon: "🖼️", color: "#8fbf9f" },
+    memo: { icon: "📝", color: "#e8a0b8" },
+    music: { icon: "🎵", color: "#8b6fae" },
+    browser: { icon: "🔍", color: "#5a9fd4" },
+    search: { icon: "🔎", color: "#6a5290" },
+    takeout: { icon: "🍜", color: "#ff9244" },
+    weather: { icon: "⛅", color: "#7ec8e3" },
+    settings: { icon: "⚙️", color: "#8a8294" }
+  };
+  function renderShell() {
+    const app = document.getElementById("qyn-phone") || document.body;
+    app.innerHTML = `
+  <style>${STYLES}<\/style>
+  <div class="phone-body">
+    <div class="statusbar"><span>祁远宁的 iPhone</span><span id="qyn-clock">--:--</span></div>
+    <div class="header">
+      <span class="back" id="qyn-back" style="visibility:hidden">‹</span>
+      <h1 id="qyn-title">手机</h1>
+      <span style="width:18px"></span>
+    </div>
+    <div class="scr" id="qyn-screen"></div>
+    <div class="tabbar">
+      <div class="tab active" data-mod="home"><i>🏠</i>首页</div>
+      <div class="tab" data-mod="wechat"><i>💬</i>微信</div>
+      <div class="tab" data-mod="moments"><i>📸</i>朋友圈</div>
+      <div class="tab" data-mod="weibo"><i>🌐</i>微博</div>
+      <div class="tab" data-mod="settings"><i>⚙️</i>设置</div>
+    </div>
+  </div>`;
+    rootEl = document.getElementById("qyn-screen");
+    app.querySelectorAll(".tabbar .tab").forEach((t) => {
+      t.addEventListener("click", () => {
+        const mod = t.dataset.mod;
+        activeModule = mod;
+        app.querySelectorAll(".tabbar .tab").forEach((x) => x.classList.remove("active"));
+        t.classList.add("active");
+        refreshCurrent();
+      });
+    });
+    document.getElementById("qyn-back").addEventListener("click", () => {
+      activeModule = "home";
+      refreshCurrent();
+    });
+    const clk = document.getElementById("qyn-clock");
+    const tick = () => {
+      const d = /* @__PURE__ */ new Date();
+      clk.textContent = `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+    };
+    tick();
+    setInterval(tick, 3e4);
+  }
+  var refreshCurrent = () => {
+  };
+  function renderHome(d) {
+    const phone = d.手机 || {};
+    const qyn = d.祁远宁 || {};
+    const rel = qyn.与用户关系 || {};
+    const unread = countUnread(phone);
+    const html = `
+  <div class="home-grid">
+    ${homeApp("wechat", "微信", unread.wechat)}
+    ${homeApp("group", "群聊", unread.group)}
+    ${homeApp("moments", "朋友圈", unread.moments)}
+    ${homeApp("weibo", "微博", unread.weibo)}
+    ${homeApp("forum", "论坛", 0)}
+    ${homeApp("album", "相册", 0)}
+    ${homeApp("memo", "备忘录", 0)}
+    ${homeApp("music", "音乐", 0)}
+    ${homeApp("browser", "浏览", 0)}
+    ${homeApp("search", "搜索", 0)}
+    ${homeApp("takeout", "外卖", 0)}
+    ${homeApp("weather", "天气", 0)}
+  </div>
+  <div class="widget">
+    <div class="w-title">与用户关系</div>
+    <div class="relation-card">
+      <div class="rc"><div class="v" style="color:var(--rose)">${f(rel.好感度, 0)}</div><div class="l">好感度</div></div>
+      <div class="rc"><div class="v">${f(rel.占有欲, 0)}</div><div class="l">占有欲</div></div>
+      <div class="rc"><div class="v" style="color:var(--green)">${f(rel.信任度, 0)}</div><div class="l">信任度</div></div>
+      <div class="rc"><div class="v" style="color:var(--blue);font-size:13px">${esc(f(rel.当前阶段))}</div><div class="l">阶段</div></div>
+    </div>
+  </div>
+  <div class="widget">
+    <div class="w-title">祁远宁状态</div>
+    <div style="font-size:13px;margin-bottom:4px">${esc(f(qyn.当前状态?.心情))}</div>
+    <div style="font-size:12px;color:var(--txt-d)">${esc(f(qyn.当前状态?.动作))}</div>
+  </div>`;
+    setScreen(html, "手机", false);
+    bindHomeApps();
+  }
+  function homeApp(mod, name, badge) {
+    const ic = APP_ICONS[mod] || { icon: "📱", color: "#666" };
+    return `<div class="home-app" data-mod="${mod}">
+    <div class="icon notify" style="background:linear-gradient(135deg,${ic.color},${shade(ic.color)})">
+      <i>${ic.icon}</i>
+      ${badge > 0 ? `<span class="badge">${badge > 99 ? "99+" : badge}</span>` : ""}
+    </div>
+    <div class="name">${name}</div>
+  </div>`;
+  }
+  function bindHomeApps() {
+    document.querySelectorAll(".home-app").forEach((a) => {
+      a.addEventListener("click", () => {
+        const mod = a.dataset.mod;
+        activeModule = mod;
+        document.querySelectorAll(".tabbar .tab").forEach((x) => x.classList.remove("active"));
+        refreshCurrent();
+      });
+    });
+  }
+  function countUnread(phone) {
+    const wechatChats = phone.微信聊天 || {};
+    let wechat = 0;
+    Object.keys(wechatChats).forEach((k) => {
+      wechat += (wechatChats[k] || []).length;
+    });
+    return {
+      wechat,
+      group: (phone.群聊?.消息 || []).length,
+      moments: (phone.朋友圈 || []).length,
+      weibo: (phone.微博 || []).length
+    };
+  }
+  var TITLES = {
+    home: "手机",
+    wechat: "微信",
+    group: "三人行群聊",
+    moments: "朋友圈",
+    weibo: "微博",
+    forum: "论坛",
+    album: "相册",
+    memo: "备忘录",
+    music: "听歌记录",
+    browser: "浏览记录",
+    search: "搜索记录",
+    takeout: "外卖订单",
+    weather: "天气",
+    settings: "设置",
+    npc: "NPC心声",
+    profile: "祁远宁"
+  };
+  function renderModule(mod, d) {
+    activeModule = mod;
+    let html = "";
+    const phone = d.手机 || {};
+    switch (mod) {
+      case "wechat":
+        html = renderWechat(phone);
+        break;
+      case "group":
+        html = renderGroup(phone);
+        break;
+      case "moments":
+        html = renderMoments(phone);
+        break;
+      case "weibo":
+        html = renderWeibo(phone);
+        break;
+      case "forum":
+        html = renderForum(phone);
+        break;
+      case "album":
+        html = renderAlbum(phone);
+        break;
+      case "memo":
+        html = renderMemo(phone);
+        break;
+      case "music":
+        html = renderMusic(phone);
+        break;
+      case "browser":
+        html = renderBrowser(phone);
+        break;
+      case "search":
+        html = renderSearch(phone);
+        break;
+      case "takeout":
+        html = renderTakeout(phone);
+        break;
+      case "weather":
+        html = renderWeather(phone);
+        break;
+      case "settings":
+        html = renderSettings(d);
+        break;
+      case "npc":
+        html = renderNPC(d);
+        break;
+      case "profile":
+        html = renderProfile(d);
+        break;
+      default:
+        html = renderHome(d);
+    }
+    setScreen(html, TITLES[mod] || "手机", mod !== "home");
+    if (mod === "settings") bindSettings(d);
+  }
+  function setScreen(html, title, showBack) {
+    if (rootEl) rootEl.innerHTML = html;
+    const t = document.getElementById("qyn-title");
+    if (t) t.textContent = title;
+    const b = document.getElementById("qyn-back");
+    if (b) b.style.visibility = showBack ? "visible" : "hidden";
+  }
+  function renderWechat(phone) {
+    const chats = phone.微信聊天 || {};
+    const names = Object.keys(chats);
+    if (!names.length) return empty("暂无聊天记录");
+    let html = '<div class="list">';
+    names.forEach((name) => {
+      const msgs = chats[name] || [];
+      const last = msgs[msgs.length - 1];
+      html += `<div class="chat-row item">
+      <div class="avatar" style="background:${avatarColor(name)}">${name.slice(0, 1)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between"><span style="font-weight:600">${esc(name)}</span><span class="p-time">${esc(last?.时间 || "")}</span></div>
+        <div style="font-size:12px;color:var(--txt-d);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(last?.内容 || "")}</div>
+        <div style="font-size:10px;color:var(--accent);margin-top:2px">共${msgs.length}条</div>
+      </div>
+    </div>`;
+    });
+    html += "</div>";
+    return html;
+  }
+  function renderGroup(phone) {
+    const grp = phone.群聊 || {};
+    const msgs = grp.消息 || [];
+    if (!msgs.length) return empty("群聊暂无消息");
+    let html = `<div style="padding:10px;background:var(--panel)"><div style="text-align:center;font-size:12px;color:var(--gold);margin-bottom:6px">💌 ${esc(grp.群名 || "三人行")} (陆永琛·周岳山·祁远宁)</div></div>`;
+    msgs.forEach((m, i) => {
+      const isMe = m.发送者 === "祁远宁";
+      const prev = msgs[i - 1];
+      const showTime = !prev || m.时间 !== prev.时间;
+      html += `${showTime ? `<div class="chat-time">${esc(m.时间 || "")}</div>` : ""}
+    <div class="chat-row" style="padding:4px 12px;${isMe ? "flex-direction:row-reverse" : ""}">
+      <div class="avatar" style="width:32px;height:32px;font-size:13px;background:${avatarColor(m.发送者)}">${esc((m.发送者 || "").slice(0, 1))}</div>
+      <div style="${isMe ? "margin-right:8px" : "margin-left:8px"};max-width:72%">
+        ${!isMe ? `<div style="font-size:11px;color:var(--txt-d);margin-bottom:2px">${esc(m.发送者 || "")}</div>` : ""}
+        <div class="bubble ${isMe ? "me" : ""}">${esc(m.内容 || "")}</div>
+      </div>
+    </div>`;
+    });
+    return html;
+  }
+  function renderMoments(phone) {
+    const list = phone.朋友圈 || [];
+    if (!list.length) return empty("朋友圈暂无动态");
+    let html = '<div class="list">';
+    list.forEach((m) => {
+      html += `<div class="post">
+      <div class="p-head">
+        <div class="avatar" style="width:34px;height:34px;font-size:14px;background:${avatarColor(m.发布者)}">${esc((m.发布者 || "").slice(0, 1))}</div>
+        <div><div class="p-name">${esc(m.发布者 || "")}</div><div class="p-time">${esc(m.时间 || "")}</div></div>
+      </div>
+      <div class="p-body">${esc(m.内容 || "")}</div>
+      <div class="p-stats"><span>♡ ${f(m.点赞数, 0)}</span><span>💬 ${(m.评论 || []).length}</span></div>
+      ${(m.评论 || []).slice(0, 4).map((c) => `<div class="cmt"><span class="c-user">${esc(c.用户 || "")}</span>${esc(c.内容 || "")}</div>`).join("")}
+    </div>`;
+    });
+    return html + "</div>";
+  }
+  function renderWeibo(phone) {
+    const list = phone.微博 || [];
+    if (!list.length) return empty("微博暂无动态");
+    let html = '<div class="list">';
+    list.forEach((w) => {
+      html += `<div class="post">
+      <div class="p-head">
+        <div class="avatar" style="background:#e6162d">Q</div>
+        <div><div class="p-name">Qiyuan_Lens <span style="font-size:10px;color:var(--txt-dd);background:rgba(230,22,45,.2);padding:1px 4px;border-radius:3px">认证</span></div><div class="p-time">${esc(w.时间 || "")}</div></div>
+      </div>
+      <div class="p-body">${esc(w.内容 || "")}</div>
+      <div class="p-stats"><span>♡ ${f(w.点赞数, 0)}</span><span>↩ ${f(w.转发数, 0)}</span><span>💬 ${(w.评论 || []).length}</span></div>
+      ${(w.评论 || []).slice(0, 6).map((c) => `<div class="cmt"><span class="c-user">${esc(c.用户 || "")}</span>${esc(c.内容 || "")}</div>`).join("")}
+    </div>`;
+    });
+    return html + "</div>";
+  }
+  function renderForum(phone) {
+    const list = phone.论坛 || [];
+    if (!list.length) return empty("论坛暂无帖子");
+    let html = '<div class="list">';
+    list.forEach((p) => {
+      html += `<div class="post" style="border-color:#c00;background:#1a0e0e">
+      <div style="background:#c00;color:#fff;padding:6px 10px;border-radius:5px 5px 0 0;margin:-12px -12px 8px;font-size:14px;font-weight:700;text-align:center">${esc(p.标题 || "")}</div>
+      <div class="p-head"><div class="p-name" style="color:#c66">${esc(p.楼主 || "")}</div><div class="p-time">${esc(p.时间 || "")}</div></div>
+      <div class="p-body">${esc(p.内容 || "")}</div>
+      <div class="p-stats"><span>💬 回复 ${(p.回复 || []).length}</span></div>
+      ${(p.回复 || []).slice(0, 8).map((r) => `<div class="cmt"><span class="c-user">${esc(r.用户 || "")}</span>${esc(r.内容 || "")}</div>`).join("")}
+    </div>`;
+    });
+    return html + "</div>";
+  }
+  function renderAlbum(phone) {
+    const list = phone.相册 || [];
+    if (!list.length) return empty("相册暂无照片");
+    let html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:10px">';
+    list.forEach((p) => {
+      html += `<div style="aspect-ratio:1;background:linear-gradient(135deg,#2a2a3a,#1a1a2a);border-radius:8px;display:flex;align-items:center;justify-content:center;padding:8px;text-align:center;font-size:11px;color:var(--txt-d)">${esc(p.描述 || "")}<div style="position:absolute;bottom:2px;right:4px;font-size:9px;color:var(--txt-dd)">${esc(p.时间 || "")}</div></div>`;
+    });
+    return html + "</div>";
+  }
+  function renderMemo(phone) {
+    const list = phone.备忘录 || [];
+    if (!list.length) return empty("备忘录为空");
+    let html = '<div class="list">';
+    list.forEach((m) => {
+      html += `<div class="item"><div style="font-size:13px;line-height:1.6">${esc(m.内容 || "")}</div><div class="p-time" style="margin-top:4px">${esc(m.时间 || "")}</div></div>`;
+    });
+    return html + "</div>";
+  }
+  function renderMusic(phone) {
+    const list = phone.听歌记录 || [];
+    if (!list.length) return empty("暂无听歌记录");
+    let html = '<div class="list">';
+    list.forEach((s) => {
+      html += `<div class="item" style="display:flex;align-items:center;gap:10px">
+      <div style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center">🎵</div>
+      <div style="flex:1"><div style="font-weight:600">${esc(s.歌名 || "")}</div><div style="font-size:11px;color:var(--txt-d)">${esc(s.歌手 || "")}</div></div>
+    </div>`;
+    });
+    return html + "</div>";
+  }
+  function renderBrowser(phone) {
+    const list = phone.浏览记录 || [];
+    if (!list.length) return empty("暂无浏览记录");
+    let html = '<div class="list">';
+    list.forEach((u) => {
+      html += `<div class="item" style="font-size:12px;color:var(--blue)">${esc(u)}</div>`;
+    });
+    return html + "</div>";
+  }
+  function renderSearch(phone) {
+    const list = phone.搜索记录 || [];
+    if (!list.length) return empty("暂无搜索记录");
+    let html = '<div class="list">';
+    list.forEach((s) => {
+      html += `<div class="item" style="display:flex;gap:8px;align-items:center"><span style="color:var(--txt-d)">🔍</span><span>${esc(s)}</span></div>`;
+    });
+    return html + "</div>";
+  }
+  function renderTakeout(phone) {
+    const list = phone.外卖订单 || [];
+    if (!list.length) return empty("暂无外卖订单");
+    let html = '<div class="list">';
+    list.forEach((o) => {
+      html += `<div class="item"><div style="font-weight:600">${esc(o.内容 || "")}</div><div style="display:flex;justify-content:space-between;margin-top:4px"><span class="p-time">${esc(o.时间 || "")}</span><span style="color:var(--gold)">¥${esc(o.金额 || "")}</span></div></div>`;
+    });
+    return html + "</div>";
+  }
+  function renderWeather(phone) {
+    const w = phone.天气 || "—";
+    return `<div style="padding:40px 20px;text-align:center">
+    <div style="font-size:60px;margin-bottom:10px">⛅</div>
+    <div style="font-size:16px;color:var(--gold);margin-bottom:6px">${esc(w)}</div>
+    <div style="font-size:12px;color:var(--txt-d)">祁远宁当前位置天气</div>
+  </div>`;
+  }
+  function renderSettings(d) {
+    return `<div class="list">
+    <div class="item" data-go="profile" style="cursor:pointer;display:flex;align-items:center;gap:10px">
+      <div class="avatar" style="background:var(--gold);color:#000">祁</div>
+      <div><div style="font-weight:700">祁远宁</div><div style="font-size:11px;color:var(--txt-d)">查看状态详情 ›</div></div>
+    </div>
+    <div class="item" data-go="npc" style="cursor:pointer;display:flex;align-items:center;gap:10px">
+      <div class="avatar" style="background:var(--rose)">👥</div>
+      <div><div style="font-weight:700">NPC心声</div><div style="font-size:11px;color:var(--txt-d)">陆永琛·周岳山·祁之等 ›</div></div>
+    </div>
+    <div class="item" style="text-align:center;color:var(--txt-dd);font-size:11px">祁远宁的 iPhone · MVU驱动 · v1.0</div>
+  </div>`;
+  }
+  function bindSettings(d) {
+    document.querySelectorAll(".item[data-go]").forEach((it) => {
+      it.addEventListener("click", () => {
+        const go = it.dataset.go;
+        renderModule(go, d);
+      });
+    });
+  }
+  function renderProfile(d) {
+    const q = d.祁远宁 || {};
+    const info = q.基础信息 || {};
+    const st = q.当前状态 || {};
+    const body = q.身体状态 || {};
+    const rel = q.与用户关系 || {};
+    return `<div class="list">
+    <div class="post">
+      <div class="p-head"><div class="avatar" style="background:var(--gold);color:#000">祁</div><div><div class="p-name">祁远宁</div><div class="p-time">${esc(f(info.身份))} · ${f(info.年龄)}岁</div></div></div>
+      <div class="p-body">${esc(f(info.当前目标))}</div>
+    </div>
+    <div class="widget"><div class="w-title">当前状态</div>
+      <div style="margin-bottom:4px">${esc(f(st.心情))}</div>
+      <div style="font-size:12px;margin-bottom:4px"><b>衣着:</b> ${esc(f(st.衣着))}</div>
+      <div style="font-size:12px;margin-bottom:4px"><b>动作:</b> ${esc(f(st.动作))}</div>
+      <div style="font-size:12px;margin-bottom:4px"><b>内心:</b> ${esc(f(st.内心想法))}</div>
+      <div style="font-size:12px"><b>日记:</b> ${esc(f(st.日记))}</div>
+    </div>
+    <div class="widget"><div class="w-title">身体状态</div>
+      <div>体力 ${f(body.体力, 0)}%<div class="bar"><i style="width:${clamp(body.体力, 0, 100)}%;background:var(--green)"></i></div></div>
+      <div style="margin-top:6px">醉酒度 ${f(body.醉酒度, 0)}%<div class="bar"><i style="width:${clamp(body.醉酒度, 0, 100)}%;background:#e8a0b8"></i></div></div>
+      <div style="margin-top:6px;font-size:12px"><b>饮食需求:</b> ${esc(f(body.饮食需求))}</div>
+    </div>
+    <div class="widget"><div class="w-title">与用户关系</div>
+      <div class="relation-card">
+        <div class="rc"><div class="v" style="color:var(--rose)">${f(rel.好感度, 0)}</div><div class="l">好感度</div></div>
+        <div class="rc"><div class="v">${f(rel.占有欲, 0)}</div><div class="l">占有欲</div></div>
+        <div class="rc"><div class="v" style="color:var(--green)">${f(rel.信任度, 0)}</div><div class="l">信任度</div></div>
+        <div class="rc"><div class="v" style="color:var(--blue);font-size:12px">${esc(f(rel.当前阶段))}</div><div class="l">阶段</div></div>
+      </div>
+    </div>
+  </div>`;
+  }
+  function renderNPC(d) {
+    const npcs = d.NPC || {};
+    const names = Object.keys(npcs);
+    if (!names.length) return empty("暂无NPC数据");
+    let html = '<div class="list">';
+    names.forEach((n) => {
+      const c = npcs[n] || {};
+      html += `<div class="npc-card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="n-name">${esc(n)}</div>
+        <div style="font-size:10px;color:var(--txt-d)">${esc(f(c.关系))}</div>
+      </div>
+      <div style="font-size:11px;color:var(--txt-dd);margin-top:2px">${esc(f(c.身份))}</div>
+      <div class="n-mind">${esc(f(c.心声))}</div>
+      <div style="font-size:11px;color:var(--txt-d);margin-top:5px"><b>状态:</b> ${esc(f(c.当前状态))}</div>
+      <div style="font-size:11px;margin-top:3px"><b style="color:var(--rose)">对用户好感:</b> ${f(c.与用户好感, 0)}</div>
+    </div>`;
+    });
+    return html + "</div>";
+  }
+  function empty(msg) {
+    return `<div class="empty">${esc(msg)}</div>`;
+  }
+  function clamp(v, a, b) {
+    return Math.max(a, Math.min(b, Number(v) || 0));
+  }
+  function avatarColor(name) {
+    const colors = ["#7aa2d9", "#8fbf9f", "#e8a0b8", "#c9a96e", "#8b6fae", "#ff7e3f", "#5a9fd4", "#e6162d"];
+    let h = 0;
+    for (const c of name || "") h = h * 31 + c.charCodeAt(0) & 65535;
+    return colors[h % colors.length];
+  }
+  function shade(hex) {
+    return hex;
+  }
+
+  // src/main.ts
+  var currentData = null;
+  function refresh() {
+    const d = readStatData();
+    if (!d || !d.祁远宁) return;
+    currentData = d;
+    const active = getActiveModule();
+    if (active === "home" || !active) {
+      renderHome(d);
+    } else {
+      renderModule(active, d);
+    }
+  }
+  function init() {
+    renderShell();
+    refresh();
+    subscribeUpdate(refresh);
+    setInterval(refresh, 2e3);
+    console.log("[祁远宁小手机] 初始化完成");
+  }
+  window.__qynPhoneRefresh = refresh;
+  window.__qynPhoneInit = init;
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+
+</script>
+</body>
+</body>
+</html>
