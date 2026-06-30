@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>祁远宁 · 状态</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Long+Cang&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0f1211; --ink-dark:#0a0c0b; --wine:#2a0b0f; --wine-soft:#3a1418;
+  --gold:#cfa86e; --gold-mute:#8b714b; --paper:#e6ddc5; --paper-text:#3c3222;
+  --txt:#e5e0d4; --txt-dim:#9a8f7a; --line:rgba(207,168,110,.18);
+  --rose:#d99ab3; --green:#91c5a8; --blue:#91add8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:transparent}
+body{
+  font-family:"Noto Serif SC",serif;color:var(--txt);font-size:13px;line-height:1.7;
+  background:radial-gradient(circle at bottom left,var(--wine) 0%,var(--ink) 45%,var(--ink-dark) 100%);
+  padding:14px 12px 18px;min-height:120px;
+}
+.wrap{
+  max-width:560px;margin:0 auto;position:relative;
+  background:linear-gradient(160deg,rgba(42,11,15,.55),rgba(15,18,17,.85));
+  border:1px solid var(--line);border-radius:14px;padding:16px 18px;
+  box-shadow:inset 0 0 40px rgba(0,0,0,.35),0 6px 24px rgba(0,0,0,.5),0 0 1px rgba(207,168,110,.15);
+  backdrop-filter:blur(3px);
+}
+.wrap::before{
+  content:"";position:absolute;inset:6px;border:1px solid rgba(207,168,110,.08);
+  border-radius:10px;pointer-events:none;
+}
+.head{
+  display:flex;align-items:baseline;justify-content:space-between;
+  padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--line);
+}
+.head .name{font-family:"Noto Serif SC";font-size:17px;font-weight:700;color:var(--gold);letter-spacing:.08em;text-shadow:0 0 8px rgba(207,168,110,.25)}
+.head .name::before{content:"祁";display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:var(--gold);color:var(--ink);border-radius:50%;font-size:12px;margin-right:8px;vertical-align:-2px}
+.head .meta{font-size:10px;color:var(--txt-dim);letter-spacing:.05em;text-align:right;line-height:1.5}
+.head .meta .stage{color:var(--gold-mute)}
+.row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:13px}
+.row .k{flex-shrink:0;width:54px;color:var(--gold-mute);font-size:12px;letter-spacing:.12em;text-align:right;font-weight:600}
+.row .v{flex:1;color:var(--txt);word-break:break-word}
+.row.mood .v{font-size:14px}
+.row .v .pen{font-family:"Long Cang",cursive;color:var(--paper);opacity:.92;font-size:14.5px;line-height:1.9}
+.diary{
+  margin-top:10px;padding:10px 12px;background:rgba(230,221,197,.04);
+  border-left:2px solid var(--gold-mute);border-radius:0 8px 8px 0;
+}
+.diary .d-k{font-size:10px;color:var(--gold-mute);letter-spacing:.2em;margin-bottom:4px;text-transform:uppercase}
+.diary .d-v{font-family:"Long Cang",cursive;color:var(--paper);font-size:14.5px;line-height:1.95;opacity:.95}
+.rels{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.rels .rc{background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:8px;padding:7px 4px;text-align:center}
+.rels .rv{font-size:16px;font-weight:700;color:var(--gold);font-family:"Noto Serif SC"}
+.rels .rl{font-size:10px;color:var(--txt-dim);letter-spacing:.1em;margin-top:2px}
+.rels .rv.rose{color:var(--rose)}.rels .rv.green{color:var(--green)}.rels .rv.blue{color:var(--blue)}
+.bar{height:3px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:3px;overflow:hidden}
+.bar>i{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,var(--gold-mute),var(--gold))}
+.body-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.body-row .bc{background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:7px;padding:7px 9px}
+.body-row .bc .bk{font-size:10px;color:var(--gold-mute);letter-spacing:.12em}
+.body-row .bc .bv{font-size:12px;color:var(--txt);margin-top:2px}
+.foot{text-align:center;font-size:9px;color:var(--txt-dim);letter-spacing:.3em;margin-top:12px;opacity:.6}
+.foot i{color:var(--gold-mute)}
+.loading{text-align:center;color:var(--txt-dim);padding:30px 0;font-style:italic;opacity:.7}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="loading">等待变量数据…</div></div>
+<script>
+function extractStatData(v){if(!v)return null;if(v.stat_data&&typeof v.stat_data==='object')return v.stat_data;return null;}
+function readData(){
+  try{var d=extractStatData(window.getVariables?window.getVariables({type:'message'}):null);if(d&&d.祁远宁)return d;}catch(e){}
+  try{var mv=window.Mvu;if(mv&&mv.getMvuData){var d2=extractStatData(mv.getMvuData({type:'message',message_id:-1}));if(d2&&d2.祁远宁)return d2;}}catch(e){}
+  try{var d3=extractStatData(window.getAllVariables?window.getAllVariables():null);if(d3&&d3.祁远宁)return d3;}catch(e){}
+  return null;
+}
+function esc(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
+function f(v,d){return v||v===0?String(v):(d!=null?d:'—');}
+function clamp(v,a,b){return Math.max(a,Math.min(b,Number(v)||0));}
+function render(d){
+  var w=d.世界||{},q=d.祁远宁||{},info=q.基础信息||{},st=q.当前状态||{},body=q.身体状态||{},rel=q.与用户关系||{};
+  var html='';
+  html+='<div class="head"><div class="name">'+esc(f(info.姓名,'祁远宁'))+'</div>'+
+    '<div class="meta"><span>'+esc(f(w.当前时间))+'</span><br><span class="stage">'+esc(f(w.当前地点))+' · '+esc(f(w.天气))+'</span><br><span class="stage">'+esc(f(rel.当前阶段))+'</span></div></div>';
+  html+='<div class="row mood"><div class="k">心 情</div><div class="v">'+esc(f(st.心情))+'</div></div>';
+  html+='<div class="row"><div class="k">衣 着</div><div class="v">'+esc(f(st.衣着))+'</div></div>';
+  html+='<div class="row"><div class="k">动 作</div><div class="v">'+esc(f(st.动作))+'</div></div>';
+  html+='<div class="row"><div class="k">内 心</div><div class="v"><span class="pen">'+esc(f(st.内心想法))+'</span></div></div>';
+  html+='<div class="diary"><div class="d-k">日记</div><div class="d-v">'+esc(f(st.日记))+'</div></div>';
+  html+='<div class="body-row">'+
+    '<div class="bc"><div class="bk">体力</div><div class="bv">'+f(body.体力,0)+'%<div class="bar"><i style="width:'+clamp(body.体力,0,100)+'%;background:linear-gradient(90deg,#8b714b,#91c5a8)"></i></div></div></div>'+
+    '<div class="bc"><div class="bk">醉酒度</div><div class="bv">'+f(body.醉酒度,0)+'%<div class="bar"><i style="width:'+clamp(body.醉酒度,0,100)+'%;background:linear-gradient(90deg,#8b714b,#d99ab3)"></i></div></div></div>'+
+    '<div class="bc"><div class="bk">饮食</div><div class="bv">'+esc(f(body.饮食需求))+'</div></div>'+
+    '<div class="bc"><div class="bk">目标</div><div class="bv" style="font-size:11px">'+esc(f(info.当前目标))+'</div></div>'+
+    '</div>';
+  html+='<div class="rels">'+
+    '<div class="rc"><div class="rv rose">'+f(rel.好感度,0)+'</div><div class="rl">好感度</div></div>'+
+    '<div class="rc"><div class="rv">'+f(rel.占有欲,0)+'</div><div class="rl">占有欲</div></div>'+
+    '<div class="rc"><div class="rv green">'+f(rel.信任度,0)+'</div><div class="rl">信任度</div></div>'+
+    '<div class="rc"><div class="rv blue" style="font-size:12px">'+esc(f(rel.当前阶段))+'</div><div class="rl">阶段</div></div>'+
+    '</div>';
+  html+='<div class="foot"><i class="fa-solid fa-arrows-rotate"></i> 实时同步 MVU · 祁远宁</div>';
+  document.querySelector('.wrap').innerHTML=html;
+}
+function refresh(){var d=readData();if(d)render(d);}
+refresh();
+try{var mv=window.Mvu;if(mv&&mv.events&&mv.events.VARIABLE_UPDATE_ENDED&&typeof window.eventOn==='function')window.eventOn(mv.events.VARIABLE_UPDATE_ENDED,refresh);}catch(e){}
+setInterval(refresh,1800);
+</script>
+</body>
+</html>
