@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>祁远宁变量状态栏</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0a10;
+      --panel: rgba(24, 22, 32, .94);
+      --panel-soft: rgba(34, 31, 43, .86);
+      --line: rgba(211, 178, 110, .22);
+      --gold: #d8b574;
+      --rose: #d99ab3;
+      --green: #91c5a8;
+      --blue: #91add8;
+      --text: #f0e9df;
+      --muted: #a59cac;
+      --dim: #776f81;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: transparent; }
+    body {
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .qyn-status {
+      width: min(100%, 760px);
+      margin: 6px auto 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: linear-gradient(145deg, rgba(11,10,16,.98), rgba(27,24,36,.96));
+      box-shadow: 0 12px 28px rgba(0,0,0,.28);
+      overflow: hidden;
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(211,178,110,.14);
+      background: rgba(0,0,0,.18);
+    }
+
+    .title { color: var(--gold); font-weight: 700; letter-spacing: .04em; }
+    .scene { color: var(--muted); font-size: 12px; text-align: right; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 8px;
+      padding: 10px;
+    }
+
+    .card {
+      min-width: 0;
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 8px;
+      background: var(--panel-soft);
+      padding: 9px;
+    }
+
+    .label {
+      margin-bottom: 5px;
+      color: var(--dim);
+      font-size: 11px;
+      letter-spacing: .05em;
+    }
+
+    .value { word-break: break-word; }
+    .mood { color: var(--rose); font-weight: 700; }
+    .compact { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .metric {
+      border-radius: 7px;
+      background: rgba(0,0,0,.18);
+      padding: 7px;
+      text-align: center;
+    }
+    .metric b { display: block; color: var(--gold); font-size: 16px; }
+    .metric span { color: var(--muted); font-size: 11px; }
+    .diary { max-height: 120px; overflow-y: auto; padding-right: 2px; }
+    .empty { padding: 16px; color: var(--muted); text-align: center; }
+
+    @media (max-width: 520px) {
+      body { font-size: 12px; }
+      .qyn-status { border-radius: 8px; margin: 4px 0 8px; }
+      .top { display: block; padding: 9px 10px; }
+      .scene { text-align: left; margin-top: 4px; }
+      .grid { grid-template-columns: 1fr; padding: 8px; gap: 7px; }
+      .compact { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .metric { padding: 6px 4px; }
+      .metric b { font-size: 14px; }
+      .diary { max-height: 92px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="qyn-status">
+    <div class="empty">等待 MVU 变量...</div>
+  </div>
+
+  <script>
+    (() => {
+      const app = document.getElementById('app');
+      let lastGood = null;
+
+      function esc(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function pick(value, fallback = '—') {
+        return value || value === 0 ? value : fallback;
+      }
+
+      function statFrom(value) {
+        if (!value || typeof value !== 'object') return null;
+        if (value.stat_data && typeof value.stat_data === 'object') return value.stat_data;
+        return null;
+      }
+
+      function readStatData() {
+        const readers = [
+          () => window.getVariables?.({ type: 'message' }),
+          () => window.Mvu?.getMvuData?.({ type: 'message', message_id: -1 }),
+          () => window.getAllVariables?.(),
+          () => window.parent?.getVariables?.({ type: 'message' }),
+          () => window.parent?.Mvu?.getMvuData?.({ type: 'message', message_id: -1 }),
+          () => window.parent?.getAllVariables?.()
+        ];
+
+        for (const reader of readers) {
+          try {
+            const data = statFrom(reader());
+            if (data && data.祁远宁 && data.世界) return data;
+          } catch {}
+        }
+        return null;
+      }
+
+      function render(data) {
+        const world = data.世界 || {};
+        const qyn = data.祁远宁 || {};
+        const status = qyn.当前状态 || {};
+        const body = qyn.身体状态 || {};
+        const relation = qyn.与用户关系 || {};
+
+        app.innerHTML = `
+          <div class="top">
+            <div class="title">祁远宁 · 状态</div>
+            <div class="scene">${esc(pick(world.当前时间))} / ${esc(pick(world.当前地点))}</div>
+          </div>
+          <div class="grid">
+            <section class="card">
+              <div class="label">心情</div>
+              <div class="value mood">${esc(pick(status.心情))}</div>
+            </section>
+            <section class="card">
+              <div class="label">动作</div>
+              <div class="value">${esc(pick(status.动作))}</div>
+            </section>
+            <section class="card">
+              <div class="label">衣着</div>
+              <div class="value">${esc(pick(status.衣着))}</div>
+            </section>
+            <section class="card">
+              <div class="label">关系</div>
+              <div class="compact">
+                <div class="metric"><b>${esc(pick(relation.好感度, 0))}</b><span>好感</span></div>
+                <div class="metric"><b>${esc(pick(relation.占有欲, 0))}</b><span>占有</span></div>
+                <div class="metric"><b>${esc(pick(relation.信任度, 0))}</b><span>信任</span></div>
+              </div>
+            </section>
+            <section class="card">
+              <div class="label">内心想法</div>
+              <div class="value">${esc(pick(status.内心想法))}</div>
+            </section>
+            <section class="card">
+              <div class="label">身体</div>
+              <div class="value">体力 ${esc(pick(body.体力, 0))}% · 醉酒 ${esc(pick(body.醉酒度, 0))}% · ${esc(pick(body.饮食需求))}</div>
+            </section>
+            <section class="card" style="grid-column: 1 / -1">
+              <div class="label">日记</div>
+              <div class="value diary">${esc(pick(status.日记))}</div>
+            </section>
+          </div>
+        `;
+      }
+
+      function refresh() {
+        const next = readStatData();
+        if (next) lastGood = next;
+        if (lastGood) {
+          render(lastGood);
+        } else {
+          app.innerHTML = '<div class="empty">等待 MVU 变量...</div>';
+        }
+      }
+
+      function subscribe(win) {
+        try {
+          const eventName = win?.Mvu?.events?.VARIABLE_UPDATE_ENDED;
+          if (eventName && typeof win.eventOn === 'function') win.eventOn(eventName, refresh);
+        } catch {}
+      }
+
+      refresh();
+      subscribe(window);
+      if (window.parent && window.parent !== window) subscribe(window.parent);
+      window.__qynStatusRefresh = refresh;
+      setInterval(refresh, 1500);
+    })();
+  </script>
+</body>
+</html>
