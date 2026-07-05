@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>无限流 · 状态面板</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root{
+  --bg:rgba(8,8,22,0.94);
+  --surface:rgba(14,14,38,0.85);
+  --border:rgba(100,140,240,0.14);
+  --text:#c8d0e4;
+   --text-dim:#7c85a2;
+  --accent:#6088e8;
+  --accent2:#8b5cf6;
+  --gold:#e0b044;
+  --danger:#ef5566;
+  --success:#34d399;
+  --hp:#e05555;--mp:#6088e8;--sp:#e0b044;
+  --rds:10px;--rds-sm:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+   font-family:'Noto Sans SC',-apple-system,sans-serif;
+   background:transparent;color:var(--text);
+   font-size:0.78rem;line-height:1.55;
+   max-height:100vh;overflow-y:auto;overflow-x:hidden;
+   padding:6px 8px;-webkit-font-smoothing:antialiased;
+   scrollbar-width:thin;scrollbar-color:rgba(100,140,240,0.15) transparent;
+ }
+body::-webkit-scrollbar{width:3px}
+body::-webkit-scrollbar-thumb{background:rgba(100,140,240,0.15);border-radius:2px}
+
+.panel{background:var(--bg);border:1px solid var(--border);border-radius:var(--rds);padding:14px;backdrop-filter:blur(14px);max-width:100%}
+
+.hrow{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.hleft h2{font-family:'Orbitron',monospace;font-size:1.05rem;font-weight:700;background:linear-gradient(135deg,#9cc0ff,#b8a0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:1px;margin:0}
+.hleft .wtag{font-size:0.68rem;color:var(--text-dim);margin-top:2px}
+.hright{text-align:right;font-size:0.66rem;color:var(--text-dim);line-height:1.6}
+
+.bars-wrap{margin-bottom:8px}
+.bar-r{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.bar-r .bl{width:24px;font-size:0.6rem;font-weight:700;text-align:right;font-family:'Orbitron',monospace}
+.bar-r .bl.hp{color:var(--hp)}.bar-r .bl.mp{color:var(--mp)}.bar-r .bl.sp{color:var(--sp)}
+.bar-r .bt{flex:1;height:6px;background:rgba(255,255,255,0.04);border-radius:3px;overflow:hidden}
+.bar-r .bf{height:100%;border-radius:3px;transition:width 0.5s ease}
+.bar-r .bf.hp{background:linear-gradient(90deg,#c0392b,#e05555,#f06060)}
+.bar-r .bf.mp{background:linear-gradient(90deg,#2b6cb0,#5088e8,#70a0f8)}
+.bar-r .bf.sp{background:linear-gradient(90deg,#b07010,#d0a040,#e0c060)}
+.bar-r .bv{font-size:0.66rem;color:var(--text-dim);width:66px;text-align:right;white-space:nowrap;font-family:'Orbitron',monospace;font-size:0.62rem}
+
+.stat-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:10px}
+.stat-cell{text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--rds-sm);padding:6px 3px;transition:all 0.25s}
+.stat-cell:hover{border-color:rgba(120,150,255,0.35)}
+.stat-cell .sv{font-family:'Orbitron',monospace;font-size:0.9rem;font-weight:700;color:var(--gold)}
+.stat-cell .sn{font-size:0.62rem;color:var(--text-dim);margin-top:1px}
+
+.info-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.015);font-size:0.74rem;gap:8px}
+.info-row .ik{color:var(--text-dim);flex-shrink:0}
+.info-row .iv{text-align:right;word-break:break-all}
+
+.badge{display:inline-block;padding:1px 7px;border-radius:3px;font-size:0.66rem;margin:1px 2px;font-weight:600}
+.badge.legend{background:rgba(224,176,68,0.15);color:var(--gold);border:1px solid rgba(224,176,68,0.2)}
+.badge.epic{background:rgba(162,100,255,0.15);color:#b080ff;border:1px solid rgba(162,100,255,0.2)}
+.badge.rare{background:rgba(96,136,232,0.15);color:#80a0f0;border:1px solid rgba(96,136,232,0.2)}
+.badge.normal{background:rgba(200,200,200,0.08);color:#aaa}
+
+.injury-badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:0.7rem;font-weight:600}
+.injury-badge.none{background:rgba(52,211,153,0.12);color:var(--success)}
+.injury-badge.light{background:rgba(224,176,68,0.12);color:var(--gold)}
+.injury-badge.severe{background:rgba(239,85,102,0.12);color:var(--danger)}
+
+summary{cursor:pointer;font-size:0.81rem;font-weight:600;color:#a0b8f0;padding:6px 0;outline:none;user-select:none;display:flex;align-items:center;gap:6px;transition:color 0.2s}
+summary:hover{color:#c0d0ff}
+summary i{font-size:0.7rem;width:14px;text-align:center}
+details{margin-bottom:3px}
+details[open] summary{margin-bottom:3px}
+
+.tbl{width:100%;border-collapse:collapse;font-size:0.7rem}
+.tbl th{text-align:left;color:var(--text-dim);font-weight:600;padding:3px 6px;border-bottom:1px solid var(--border);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.3px}
+.tbl td{padding:3px 6px;border-bottom:1px solid rgba(255,255,255,0.015)}
+.tbl tr:hover td{background:rgba(100,140,240,0.04)}
+
+.rec-li{list-style:none;padding:0;margin:0}
+.rec-li li{font-size:0.72rem;padding:3px 0 3px 12px;position:relative;transition:color 0.2s}
+.rec-li li:hover{color:#d0d8f0}
+.rec-li li:before{content:'›';position:absolute;left:0;color:var(--accent);font-size:0.7rem;top:4px;font-weight:700}
+.empty{color:var(--text-dim);font-size:0.72rem;font-style:italic;padding:4px 0}
+.reload-ft{text-align:center;font-size:0.6rem;color:var(--text-dim);margin-top:8px;letter-spacing:0.5px}
+</style></head><body>
+<div class="panel" id="root"><div style="text-align:center;color:var(--text-dim);padding:32px 0"><i class="fa-solid fa-spinner fa-spin"></i> 等待数据…</div></div>
+<script>
+function g(d,p,df){var k=p.split('.'),r=d;for(var i=0;i<k.length;i++){if(r==null||typeof r!=='object')return df;r=r[k[i]]}return r!=null?r:df}
+function f(v,df){return v!=null?String(v):(df||'—')}
+
+function render(d){
+   var root=document.getElementById('root');
+   if(!d||!d.主角){root.innerHTML='<div style="text-align:center;color:var(--text-dim);padding:32px 0"><i class="fa-solid fa-spinner fa-spin"></i> 等待数据…</div>';return}
+   var openDetails=[];root.querySelectorAll('details[open]').forEach(function(dt){var s=dt.querySelector('summary');if(s)openDetails.push(s.textContent.trim())});
+  var w=d.世界||{},p=d.主角||{},bi=p.基础信息||{},at=p.属性||{},st=p.状态||{};
+  var cl=p.穿着||{},sw=d.系统开关||{},qt=d.当前任务||{};
+  var tm=Array.isArray(d.队友)?d.队友:[],nv=d.当前环境NPC||{},mem=d.记忆库||{},rec=Array.isArray(d.行动推荐)?d.行动推荐:[];
+  var tal=p.天赋||{},skills=p.技能||{},items=p.物品栏||{};
+  var hp=st.生命值||0,hpm=st.生命值上限||100,mp=st.法力值||0,mpm=st.法力值上限||1,sp=st.体力值||0,spm=st.体力值上限||1;
+  var inj=st.伤势描述;
+
+  var h='';
+  h+='<div class="hrow"><div class="hleft"><h2>'+f(g(p,'基础信息.姓名'),'适格者')+'</h2><div class="wtag"><i class="fa-solid fa-globe"></i> '+f(w.当前世界)+' · '+f(w.当前世界类型)+'</div></div><div class="hright"><i class="fa-regular fa-clock"></i> '+f(w.当前时间)+'<br><i class="fa-solid fa-location-dot"></i> '+f(w.当前地点)+'<br><i class="fa-solid fa-cloud-sun"></i> '+f(w.天气,'—')+'</div></div>';
+
+  h+='<div class="bars-wrap">';
+  h+='<div class="bar-r"><span class="bl hp">HP</span><div class="bt"><div class="bf hp" style="width:'+(hpm?Math.min(hp/hpm*100,100):0)+'%"></div></div><span class="bv">'+hp+' / '+hpm+'</span></div>';
+  h+='<div class="bar-r"><span class="bl mp">MP</span><div class="bt"><div class="bf mp" style="width:'+(mpm?Math.min(mp/mpm*100,100):0)+'%"></div></div><span class="bv">'+mp+' / '+mpm+'</span></div>';
+  h+='<div class="bar-r"><span class="bl sp">SP</span><div class="bt"><div class="bf sp" style="width:'+(spm?Math.min(sp/spm*100,100):0)+'%"></div></div><span class="bv">'+sp+' / '+spm+'</span></div>';
+  h+='</div>';
+
+  var injCls=!inj||inj==='无'?'none':(inj.includes('重')||inj.includes('骨')||inj.includes('致')?'severe':'light');
+  h+='<div class="info-row"><span class="ik">伤势</span><span class="iv"><span class="injury-badge '+injCls+'">'+f(inj,'完好')+'</span></span></div>';
+
+  h+='<div class="stat-grid">';
+  ['力量','敏捷','体质','精神','智力','魅力'].forEach(function(s){h+='<div class="stat-cell"><div class="sv">'+f(at[s])+'</div><div class="sn">'+s+'</div></div>'});
+  h+='</div>';
+
+  h+='<div class="info-row"><span class="ik">剩余属性点</span><span class="iv" style="font-family:Orbitron,monospace;color:var(--gold)">'+f(at.剩余属性点,'0')+'</span></div>';
+  h+='<div class="info-row"><span class="ik">年龄 · 性别</span><span class="iv">'+f(bi.年龄)+' · '+f(bi.性别)+'</span></div>';
+   h+='<div class="info-row"><span class="ik">穿着</span><span class="iv">'+f(cl.整体描述)+'</span></div>';
+   h+='<div class="info-row"><span class="ik">血统体质</span><span class="iv">'+f(p.血统体质,'普通人类')+'</span></div>';
+   h+='<div class="info-row"><span class="ik">积分'+(sw.积分系统?'':' <span style="font-size:0.62rem;color:var(--text-dim)">[已关闭]</span>')+'</span><span class="iv" style="font-family:Orbitron,monospace;color:var(--gold);font-weight:600">'+f(p.积分,'0')+'</span></div>';
+
+  h+='<details><summary><i class="fa-solid fa-star"></i> 天赋 ('+Object.keys(tal).length+')</summary>';
+  if(Object.keys(tal).length){Object.keys(tal).forEach(function(t){var td=tal[t],cls=td.等级==='传说'?'legend':(td.等级==='史诗'?'epic':(td.等级==='稀有'?'rare':'normal'));h+='<div class="info-row"><span class="ik"><span class="badge '+cls+'">'+f(td.等级)+'</span> '+t+'</span><span class="iv" style="font-size:0.7rem">'+f(td.描述)+'</span></div>'})}
+  else{h+='<div class="empty">无</div>'}h+='</details>';
+
+  h+='<details><summary><i class="fa-solid fa-wand-sparkles"></i> 技能 ('+Object.keys(skills).length+')</summary>';
+  if(Object.keys(skills).length){Object.keys(skills).forEach(function(s){var sk=skills[s];h+='<div class="info-row"><span class="ik"><span class="badge normal">'+f(sk.类型)+'</span> '+s+'</span><span class="iv" style="font-size:0.7rem">'+f(sk.描述)+(sk.冷却回合?' CD:'+f(sk.剩余冷却)+'/'+sk.冷却回合:'')+' <span style="color:var(--text-dim)">'+f(sk.熟练度)+'</span></span></div>'})}
+  else{h+='<div class="empty">无</div>'}h+='</details>';
+
+  h+='<details><summary><i class="fa-solid fa-backpack"></i> 物品 ('+Object.keys(items).length+')</summary>';
+  if(Object.keys(items).length){Object.keys(items).forEach(function(i){var it=items[i];h+='<div class="info-row"><span class="ik"><span class="badge normal">'+f(it.品质)+'</span> '+i+' x'+f(it.数量)+'</span><span class="iv" style="font-size:0.7rem">'+f(it.描述)+'</span></div>'})}
+  else{h+='<div class="empty">无</div>'}h+='</details>';
+
+   h+='<details open><summary><i class="fa-solid fa-users"></i> 队友 ('+tm.length+')</summary>';
+   if(tm.length){h+='<table class="tbl"><tr><th>名字</th><th>身份</th><th>好感度</th><th>态度</th><th>状态</th></tr>';tm.forEach(function(t){var fav=parseInt(t.好感度)||0,fc=fav>=60?'var(--success)':(fav>=0?'var(--gold)':'var(--danger)');h+='<tr><td>'+f(t.名字)+'</td><td>'+f(t.身份)+'</td><td style="font-family:Orbitron,monospace;color:'+fc+'">'+f(t.好感度,'0')+'</td><td>'+f(t.态度)+'</td><td>'+f(t.状态)+'</td></tr>'});h+='</table>'}
+  else{h+='<div class="empty">无</div>'}h+='</details>';
+
+   h+='<details><summary><i class="fa-solid fa-building"></i> 当前环境NPC ('+Object.keys(nv).length+')</summary>';
+   if(Object.keys(nv).length){h+='<table class="tbl"><tr><th>名字</th><th>身份</th><th>关系</th><th>好感度</th><th>态度</th><th>状态</th></tr>';Object.keys(nv).forEach(function(k){var n=nv[k],fav=parseInt(n.好感度)||0,fc=fav>=60?'var(--success)':(fav>=0?'var(--gold)':'var(--danger)');h+='<tr><td>'+k+'</td><td>'+f(n.身份)+'</td><td>'+f(n.关系)+'</td><td style="font-family:Orbitron,monospace;color:'+fc+'">'+f(n.好感度,'0')+'</td><td>'+f(n.态度)+'</td><td>'+f(n.状态)+'</td></tr>'});h+='</table>'}
+  else{h+='<div class="empty">无</div>'}h+='</details>';
+
+  h+='<details><summary><i class="fa-solid fa-list-check"></i> 任务</summary>';
+  h+='<div class="info-row"><span class="ik">主线</span><span class="iv">'+f(qt.主线,'无')+(qt.主线&&qt.主线总节点?' (节点'+f(qt.主线节点,'0')+'/'+qt.主线总节点+')':'')+'</span></div>';
+  var sq=qt.支线||{};if(Object.keys(sq).length){Object.keys(sq).forEach(function(q){var qd=sq[q],stCls=qd.状态==='已完成'?'success':'danger';h+='<div class="info-row"><span class="ik"><span class="badge '+(qd.状态==='已完成'?'rare':'')+'">'+f(qd.状态)+'</span> '+q+'</span><span class="iv" style="font-size:0.68rem">'+f(qd.描述)+'</span></div>'})}
+  h+='</details>';
+
+  h+='<details><summary><i class="fa-solid fa-memory"></i> 记忆库 ('+Object.keys(mem).length+'个世界)</summary>';
+  if(Object.keys(mem).length){h+='<table class="tbl"><tr><th>世界</th><th>状态</th><th>事件</th></tr>';Object.keys(mem).slice(-5).reverse().forEach(function(k){var m=mem[k];h+='<tr><td>'+k+'</td><td>'+f(m.通关状态)+'</td><td>'+(m.关键事件||[]).length+'件</td></tr>'});h+='</table>'}
+  else{h+='<div class="empty">尚未经历任何世界</div>'}h+='</details>';
+
+  if(rec.length){h+='<details open><summary><i class="fa-solid fa-lightbulb"></i> 行动推荐</summary><ul class="rec-li">';rec.forEach(function(r){h+='<li>'+r+'</li>'});h+='</ul></details>'}
+
+   h+='<div class="reload-ft"><i class="fa-solid fa-arrows-rotate fa-spin"></i> 实时同步 MVU stat_data</div>';
+   root.innerHTML=h;
+   root.querySelectorAll('details').forEach(function(dt){var s=dt.querySelector('summary');if(s&&openDetails.indexOf(s.textContent.trim())>=0)dt.setAttribute('open','')});
+ }
+
+function rd(){
+  try{
+    var gv=window.getVariables,mv=window.Mvu,raw=gv?gv({type:'message'}):null;
+    if(raw&&raw.stat_data&&raw.stat_data.主角)return raw.stat_data;
+    if(mv&&mv.getMvuData){var d=mv.getMvuData({type:'message',message_id:-1});if(d&&d.stat_data&&d.stat_data.主角)return d.stat_data}
+    var all=window.getAllVariables?window.getAllVariables():null;
+    if(all&&all.stat_data&&all.stat_data.主角)return all.stat_data;
+  }catch(e){console.error('[状态栏]',e)}
+  return null;
+}
+function refresh(){var d=rd();if(d)render(d)}
+refresh();
+try{var mv=window.Mvu;if(mv&&mv.events&&mv.events.VARIABLE_UPDATE_ENDED&&typeof window.eventOn==='function')window.eventOn(mv.events.VARIABLE_UPDATE_ENDED,refresh)}catch(e){}
+setInterval(refresh,1800);
+</script></body></html>
