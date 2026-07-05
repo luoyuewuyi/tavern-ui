@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:linear-gradient(135deg,#0a0a1a 0%,#1a1040 30%,#0d1b2a 60%,#0a0a1a 100%);
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  font-family:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+  color:#e0d8f0;overflow:hidden;
+}
+body::before{
+  content:'';position:fixed;top:0;left:0;right:0;bottom:0;
+  background:
+    radial-gradient(ellipse at 20% 50%,rgba(120,80,200,0.08) 0%,transparent 50%),
+    radial-gradient(ellipse at 80% 20%,rgba(180,140,220,0.06) 0%,transparent 50%),
+    radial-gradient(ellipse at 50% 80%,rgba(100,60,180,0.05) 0%,transparent 50%);
+  pointer-events:none;z-index:0;
+}
+.container{
+  position:relative;z-index:1;width:100%;max-width:640px;
+  padding:20px;
+}
+.card{
+  background:rgba(15,10,30,0.75);backdrop-filter:blur(24px);
+  border:1px solid rgba(180,140,220,0.15);
+  border-radius:20px;padding:32px 28px;
+  box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 80px rgba(120,60,200,0.08);
+}
+.title{
+  font-size:28px;font-weight:700;text-align:center;
+  background:linear-gradient(135deg,#c8b8f0,#8bb8f8,#d8a0f0);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:6px;
+}
+.subtitle{
+  text-align:center;font-size:13px;color:rgba(200,180,240,0.6);
+  margin-bottom:28px;letter-spacing:2px;
+}
+.progress-bar{display:flex;justify-content:center;gap:8px;margin-bottom:24px}
+.progress-dot{width:10px;height:10px;border-radius:50%;background:rgba(200,180,240,0.2);transition:all .3s}
+.progress-dot.active{background:linear-gradient(135deg,#c8b8f0,#a88ee0);box-shadow:0 0 12px rgba(160,130,220,0.5)}
+.progress-dot.done{background:rgba(160,140,200,0.5)}
+.step{display:none}
+.step.active{display:block}
+.step-title{
+  font-size:18px;font-weight:600;text-align:center;
+  color:#c8b8f0;margin-bottom:20px;
+}
+.options{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.option-btn{
+  flex:1;min-width:140px;padding:20px 16px;
+  background:rgba(30,20,60,0.6);border:1px solid rgba(160,130,220,0.25);
+  border-radius:14px;cursor:pointer;text-align:center;transition:all .3s;
+  color:#d0c8e8;
+}
+.option-btn:hover{
+  background:rgba(50,30,90,0.7);border-color:rgba(180,150,230,0.5);
+  box-shadow:0 0 20px rgba(140,100,200,0.2);transform:translateY(-2px);
+}
+.option-btn.selected{
+  background:rgba(80,50,140,0.5);border-color:rgba(180,150,240,0.7);
+  box-shadow:0 0 24px rgba(140,100,220,0.3);
+}
+.option-icon{font-size:32px;display:block;margin-bottom:8px}
+.option-label{font-size:15px;font-weight:600}
+.option-desc{font-size:12px;color:rgba(200,180,240,0.5);margin-top:4px}
+.form-group{margin-bottom:16px}
+.form-group label{
+  display:block;font-size:13px;color:rgba(200,180,240,0.7);
+  margin-bottom:6px;font-weight:500;
+}
+.form-group input,.form-group select,.form-group textarea{
+  width:100%;padding:10px 14px;
+  background:rgba(20,10,40,0.6);border:1px solid rgba(160,130,220,0.3);
+  border-radius:10px;color:#e0d8f0;font-size:14px;outline:none;
+  transition:border-color .3s;font-family:inherit;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{
+  border-color:rgba(180,150,240,0.6);box-shadow:0 0 12px rgba(140,100,200,0.15);
+}
+.form-group textarea{resize:vertical;min-height:60px}
+.form-group select{appearance:none;cursor:pointer}
+.form-group select option{background:#1a1040;color:#e0d8f0}
+.goddess-card{
+  background:rgba(25,15,50,0.5);border:1px solid rgba(160,130,220,0.2);
+  border-radius:12px;padding:16px;margin-bottom:12px;
+}
+.goddess-card .goddess-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.goddess-card .goddess-title{font-weight:600;font-size:14px;color:#c8b8f0}
+.goddess-card .goddess-remove{
+  background:none;border:1px solid rgba(220,100,100,0.3);color:#f0a0a0;
+  padding:4px 12px;border-radius:8px;cursor:pointer;font-size:12px;
+  transition:all .3s;
+}
+.goddess-card .goddess-remove:hover{background:rgba(220,100,100,0.15);border-color:rgba(220,100,100,0.6)}
+.btn-row{display:flex;gap:10px;margin-top:20px;justify-content:center}
+.btn{
+  padding:10px 28px;border-radius:10px;font-size:14px;font-weight:600;
+  cursor:pointer;transition:all .3s;border:none;font-family:inherit;
+}
+.btn-primary{
+  background:linear-gradient(135deg,#6a4c93,#4a6fa5);
+  color:#fff;box-shadow:0 4px 16px rgba(100,60,160,0.3);
+}
+.btn-primary:hover{
+  transform:translateY(-1px);
+  box-shadow:0 6px 24px rgba(120,80,200,0.4);
+}
+.btn-secondary{
+  background:rgba(30,20,60,0.5);border:1px solid rgba(160,130,220,0.25);
+  color:#c8b8f0;
+}
+.btn-secondary:hover{background:rgba(50,30,90,0.6)}
+.btn-add{
+  width:100%;padding:12px;background:rgba(30,20,60,0.4);
+  border:1px dashed rgba(160,130,220,0.3);border-radius:12px;
+  color:#c8b8f0;cursor:pointer;font-size:14px;transition:all .3s;
+}
+.btn-add:hover{background:rgba(50,30,90,0.5);border-color:rgba(180,150,240,0.5)}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="card">
+<div class="title">神格觉醒</div>
+<div class="subtitle">D I V I N E · A W A K E N I N G</div>
+<div class="progress-bar" id="progressBar"></div>
+
+<div id="stepGender" class="step active">
+<div class="step-title">选择你的性别</div>
+<div class="options">
+<div class="option-btn" data-value="男" onclick="selectGender('男',this)">
+<span class="option-icon">♂</span>
+<span class="option-label">男性</span>
+<span class="option-desc">可成为御神者或普通人</span>
+</div>
+<div class="option-btn" data-value="女" onclick="selectGender('女',this)">
+<span class="option-icon">♀</span>
+<span class="option-label">女性</span>
+<span class="option-desc">御神者 · 女神 · 普通人</span>
+</div>
+</div>
+</div>
+
+<div id="stepIdentity" class="step">
+<div class="step-title">选择你的身份</div>
+<div id="identityOptions" class="options"></div>
+<div class="btn-row">
+<button class="btn btn-secondary" onclick="prevStep()">上一步</button>
+</div>
+</div>
+
+<div id="stepBasic" class="step">
+<div class="step-title">基础信息</div>
+<div class="form-group"><label>姓名</label><input type="text" id="fName" placeholder="你的名字"></div>
+<div class="form-group"><label>年龄</label><input type="number" id="fAge" placeholder="18" min="1" max="999"></div>
+<div class="form-group"><label>开局时间线</label>
+<select id="fTimeline"><option value="神格觉醒">神格觉醒 · 混乱与敬畏的纪元</option><option value="契约纪元">契约纪元 · 秩序与枷锁的时代</option></select>
+</div>
+<div class="form-group"><label>开局背景</label><textarea id="fBg" placeholder="描述你的角色背景，如：普通的城市青年，刚大学毕业，在一家小公司做程序员..."></textarea></div>
+<div class="form-group"><label>开局故事</label><textarea id="fStory" placeholder="你希望故事从哪里开始？如：这一天，他像往常一样去上班，却在通勤途中目睹了不可思议的景象..."></textarea></div>
+<div class="btn-row">
+<button class="btn btn-secondary" onclick="prevStep()">上一步</button>
+<button class="btn btn-primary" onclick="nextFromBasic()">下一步</button>
+</div>
+</div>
+
+<div id="stepGoddess" class="step">
+<div class="step-title" id="goddessStepTitle">契约女神</div>
+<div id="goddessList"></div>
+<button class="btn-add" id="btnAddGoddess">+ 添加女神</button>
+<div class="btn-row">
+<button class="btn btn-secondary" onclick="prevStep()">上一步</button>
+<button class="btn btn-primary" onclick="submitForm()">开始觉醒</button>
+</div>
+</div>
+
+<div id="stepGoddessSelf" class="step">
+<div class="step-title">女神信息</div>
+<div class="form-group"><label>姓名</label><input type="text" id="gsName" placeholder="你的名字"></div>
+<div class="form-group"><label>年龄</label><input type="number" id="gsAge" placeholder="18" min="18" max="9999"></div>
+<div class="form-group"><label>权柄领域简述</label><textarea id="gsDomain" placeholder="你掌握什么权柄？如：苍穹的主宰——掌控天空、风暴与雷电的力量" style="min-height:50px"></textarea></div>
+<div class="form-group"><label>技能一</label><textarea id="gsSkill1" placeholder="描述第一个权柄技能，如：风暴之眼——在指定区域召唤毁灭性的雷暴" style="min-height:40px"></textarea></div>
+<div class="form-group"><label>技能二</label><textarea id="gsSkill2" placeholder="描述第二个权柄技能" style="min-height:40px"></textarea></div>
+<div class="form-group"><label>技能三</label><textarea id="gsSkill3" placeholder="描述第三个权柄技能" style="min-height:40px"></textarea></div>
+<div class="form-group"><label>技能四</label><textarea id="gsSkill4" placeholder="描述第四个权柄技能" style="min-height:40px"></textarea></div>
+<div class="btn-row">
+<button class="btn btn-secondary" onclick="prevStep()">上一步</button>
+<button class="btn btn-primary" onclick="submitForm()">开始觉醒</button>
+</div>
+</div>
+
+</div>
+</div>
+
+<script>
+(function(){
+var state={
+  step:0, gender:'', identity:'',
+  name:'',age:18,timeline:'神格觉醒',bg:'',story:'',
+  goddesses:[], goddessSelfName:'',goddessSelfAge:18,
+  goddessSelfDomain:'',goddessSelfSkills:['','','','']
+};
+
+var steps;
+function calcSteps(){
+  if(state.gender==='男'){
+    if(state.identity==='御神者') steps=['gender','identity','basic','goddess'];
+    else steps=['gender','identity','basic'];
+  }else{
+    if(state.identity==='御神者') steps=['gender','identity','basic','goddess'];
+    else if(state.identity==='女神') steps=['gender','identity','basic','goddessSelf'];
+    else steps=['gender','identity','basic'];
+  }
+  renderProgress();
+}
+
+var stepIds={gender:'stepGender',identity:'stepIdentity',basic:'stepBasic',goddess:'stepGoddess',goddessSelf:'stepGoddessSelf'};
+
+function showStep(stepKey){
+  $('.step').removeClass('active');
+  $('#'+stepIds[stepKey]).addClass('active');
+  if(stepKey==='goddess'){
+    if(state.identity==='女神'){
+      $('#goddessStepTitle').text('女神信息');
+      $('#btnAddGoddess').hide();
+    }else{
+      $('#goddessStepTitle').text('契约女神');
+      $('#btnAddGoddess').show();
+    }
+    renderGoddesses();
+  }
+}
+
+function renderProgress(){
+  var dots=steps.length;
+  var html='';
+  for(var i=0;i<dots;i++){
+    var cls='';
+    if(i<state.step) cls='done';
+    else if(i===state.step) cls='active';
+    html+='<div class="progress-dot '+cls+'"></div>';
+  }
+  $('#progressBar').html(html);
+}
+
+window.selectGender=function(g,el){
+  state.gender=g;
+  $('.option-btn').removeClass('selected');
+  $(el).addClass('selected');
+  state.identity='';state.step=0;steps=[];calcSteps();
+  nextStep();
+};
+
+window.nextStep=function(){state.step++;showStep(steps[state.step]);renderProgress();};
+window.prevStep=function(){state.step--;showStep(steps[state.step]);renderProgress();};
+
+function initIdentityStep(){
+  var opts=[];
+  if(state.gender==='男'){
+    opts=[
+      {v:'御神者',icon:'⚔',label:'御神者',desc:'契约女神，共享生命'},
+      {v:'普通人',icon:'🕊',label:'普通人',desc:'平凡人生，等待命运'}
+    ];
+  }else{
+    opts=[
+      {v:'御神者',icon:'⚔',label:'御神者',desc:'契约女神，共享生命'},
+      {v:'女神',icon:'✦',label:'女神',desc:'觉醒神力，执掌权柄'},
+      {v:'普通人',icon:'🕊',label:'普通人',desc:'平凡人生，等待命运'}
+    ];
+  }
+  var h='';
+  opts.forEach(function(o){
+    h+='<div class="option-btn" data-value="'+o.v+'" onclick="selectIdentity(\''+o.v+'\',this)"><span class="option-icon">'+o.icon+'</span><span class="option-label">'+o.label+'</span><span class="option-desc">'+o.desc+'</span></div>';
+  });
+  $('#identityOptions').html(h);
+}
+
+window.selectIdentity=function(id,el){
+  state.identity=id;
+  $('.option-btn').removeClass('selected');
+  $(el).addClass('selected');
+};
+
+window.nextFromBasic=function(){
+  state.name=$('#fName').val().trim();
+  state.age=parseInt($('#fAge').val())||18;
+  state.timeline=$('#fTimeline').val();
+  state.bg=$('#fBg').val().trim();
+  state.story=$('#fStory').val().trim();
+  if(!state.name){alert('请输入姓名');return}
+  calcSteps();
+  nextStep();
+};
+
+function renderGoddesses(){
+  var h='';
+  state.goddesses.forEach(function(g,i){
+    h+='<div class="goddess-card"><div class="goddess-header"><span class="goddess-title">女神 #'+(i+1)+'</span><button class="goddess-remove" onclick="removeGoddess('+i+')">移除</button></div>';
+    h+='<div class="form-group"><label>姓名</label><input type="text" class="gname" value="'+esc(g.name)+'" onchange="updateGoddess('+i+',\'name\',this.value)"></div>';
+    h+='<div class="form-group"><label>年龄</label><input type="number" class="gage" value="'+g.age+'" min="18" onchange="updateGoddess('+i+',\'age\',parseInt(this.value)||18)"></div>';
+    for(var s=0;s<4;s++){
+      h+='<div class="form-group"><label>技能'+(s+1)+'</label><textarea class="gskill" onchange="updateGoddess('+i+',\'skill'+(s+1)+'\',this.value)" style="min-height:40px">'+esc(g['skill'+(s+1)]||'')+'</textarea></div>';
+    }
+    h+='</div>';
+  });
+  $('#goddessList').html(h);
+}
+
+window.updateGoddess=function(i,key,val){state.goddesses[i][key]=val;};
+window.removeGoddess=function(i){state.goddesses.splice(i,1);renderGoddesses();};
+
+window.addGoddess=function(){
+  state.goddesses.push({name:'',age:18,skill1:'',skill2:'',skill3:'',skill4:''});
+  renderGoddesses();
+};
+
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+window.submitForm=function(){
+  if(state.identity==='御神者'){
+    state.goddesses.forEach(function(g){g.name=g.name||'';g.age=g.age||18;});
+  }
+  if(state.identity==='女神'){
+    state.goddessSelfName=$('#gsName').val().trim();
+    state.goddessSelfAge=parseInt($('#gsAge').val())||18;
+    state.goddessSelfDomain=$('#gsDomain').val().trim();
+    state.goddessSelfSkills=[
+      $('#gsSkill1').val().trim(),$('#gsSkill2').val().trim(),
+      $('#gsSkill3').val().trim(),$('#gsSkill4').val().trim()
+    ];
+    if(!state.goddessSelfName){alert('请输入姓名');return}
+  }
+
+  var initYaml='世界:\n  当前时间: 2026-07-05 08:00\n  当前时间线: '+state.timeline+'\n  当前地点: 华东市\n  环境描述: 新的一天开始了\n\n主角:\n  基础信息:\n    姓名: '+state.name+'\n    性别: '+state.gender+'\n    年龄: '+state.age+'\n    身份: '+state.identity+'\n    背景: "'+escYaml(state.bg||'')+'"\n    故事: "'+escYaml(state.story||'')+'"\n';
+
+  if(state.identity==='女神'){
+    initYaml+='\n女神列表:\n  - 姓名: '+state.goddessSelfName+'\n    神名: ""\n    性别: 女\n    年龄: '+state.goddessSelfAge+'\n    权柄领域: "'+escYaml(state.goddessSelfDomain)+'"\n    技能一: "'+escYaml(state.goddessSelfSkills[0])+'"\n    技能二: "'+escYaml(state.goddessSelfSkills[1])+'"\n    技能三: "'+escYaml(state.goddessSelfSkills[2])+'"\n    技能四: "'+escYaml(state.goddessSelfSkills[3])+'"\n    神印位置: ""\n    契约状态: 未契约\n    契约者: ""\n    对契约者好感: 0\n';
+  }else if(state.identity==='御神者' && state.goddesses.length>0){
+    initYaml+='\n女神列表:\n';
+    state.goddesses.forEach(function(g,i){
+      initYaml+='  - 姓名: '+g.name+'\n    神名: ""\n    性别: 女\n    年龄: '+g.age+'\n    权柄领域: ""\n    技能一: "'+escYaml(g.skill1)+'"\n    技能二: "'+escYaml(g.skill2)+'"\n    技能三: "'+escYaml(g.skill3)+'"\n    技能四: "'+escYaml(g.skill4)+'"\n    神印位置: ""\n    契约状态: 未契约\n    契约者: ""\n    对契约者好感: 0\n';
+    });
+  }else{
+    initYaml+='\n女神列表: []\n';
+  }
+
+  var msg='<UpdateVariable>\n<initvar>\n```yaml\n'+initYaml+'```\n</initvar>\n</UpdateVariable>\n';
+
+  try{
+    var p=window.parent||window.top;
+    if(p && p.$ && p.$('#send_textarea').length){
+      p.$('#send_textarea').val(msg);
+      setTimeout(function(){p.$('#send_button').click();},200);
+    }else{
+      alert('无法连接到酒馆发送框，请刷新页面后重试');
+    }
+  }catch(e){
+    alert('提交出错: '+e.message+'\n请尝试手动复制下方内容发送：\n\n'+msg);
+  }
+};
+
+function escYaml(s){
+  return (s||'').replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n');
+}
+
+$('#btnAddGoddess').on('click',function(){addGoddess();});
+
+initIdentityStep();
+calcSteps();
+showStep(steps[0]);
+})();
+</script>
+</body>
+</html>

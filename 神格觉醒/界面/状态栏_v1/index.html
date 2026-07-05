@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+.status-wrap{
+  background:linear-gradient(160deg,rgba(12,8,28,0.92) 0%,rgba(22,14,48,0.9) 40%,rgba(10,16,36,0.92) 100%);
+  border:1px solid rgba(160,130,220,0.18);border-radius:14px;
+  padding:16px;font-family:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+  color:#d8d0f0;font-size:13px;position:relative;overflow:hidden;
+  box-shadow:0 4px 24px rgba(0,0,0,0.4),0 0 40px rgba(100,50,180,0.06);
+  margin:4px 0;
+}
+.status-wrap::before{
+  content:'';position:absolute;top:0;left:0;right:0;bottom:0;
+  background:
+    radial-gradient(ellipse at 30% 20%,rgba(130,80,220,0.06),transparent 60%),
+    radial-gradient(ellipse at 70% 80%,rgba(80,140,200,0.04),transparent 60%),
+    radial-gradient(ellipse at 10% 90%,rgba(160,100,220,0.03),transparent 50%);
+  pointer-events:none;
+}
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;padding-bottom:10px;
+  border-bottom:1px solid rgba(160,130,220,0.15);
+}
+.title-area{display:flex;align-items:center;gap:8px}
+.title-icon{
+  width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,#5a3d8a,#3a6a9a);
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+}
+.title-text{
+  font-size:15px;font-weight:700;
+  background:linear-gradient(135deg,#c8b8f0,#90b8e8);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.timeline-badge{
+  font-size:11px;padding:3px 10px;border-radius:20px;
+  border:1px solid rgba(180,150,230,0.3);
+  background:rgba(40,20,70,0.5);color:#c0b0e0;
+}
+.player-card{
+  background:rgba(20,12,40,0.5);border:1px solid rgba(160,130,220,0.15);
+  border-radius:10px;padding:12px;margin-bottom:12px;
+}
+.player-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.player-avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,#4a3a7a,#3a5a8a);
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+}
+.player-name{font-weight:700;font-size:14px;color:#d8d0f0}
+.player-identity{
+  font-size:11px;padding:2px 8px;border-radius:10px;
+  background:rgba(100,60,160,0.3);color:#c8b8f0;
+}
+.player-meta{display:flex;gap:16px;font-size:12px;color:rgba(200,180,240,0.6)}
+.meta-item{display:flex;gap:4px}
+.meta-label{color:rgba(200,180,240,0.4)}
+.goddess-section{margin-top:12px}
+.section-title{
+  font-size:12px;font-weight:600;color:rgba(180,160,220,0.7);
+  text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;
+  display:flex;align-items:center;gap:6px;
+}
+.section-title::after{
+  content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(160,130,220,0.2),transparent);
+}
+.goddess-cards{display:flex;flex-direction:column;gap:10px}
+.g-card{
+  background:rgba(18,10,36,0.55);border:1px solid rgba(160,130,220,0.15);
+  border-radius:10px;padding:12px;transition:all .3s;
+  position:relative;overflow:hidden;
+}
+.g-card::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(180,140,230,0.25),transparent);
+}
+.g-card.contracted{
+  border-color:rgba(140,180,220,0.25);
+}
+.g-card.contracted::after{
+  background:linear-gradient(90deg,transparent,rgba(140,180,220,0.35),transparent);
+}
+.g-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.g-name-area{display:flex;align-items:center;gap:8px}
+.g-name{font-weight:700;font-size:14px;color:#e0d8f0}
+.g-mark{
+  font-size:10px;padding:2px 8px;border-radius:10px;
+  background:rgba(80,60,140,0.4);color:#c0b0e0;
+}
+.g-divine{
+  font-size:12px;color:#b8a8e0;font-style:italic;
+  letter-spacing:1px;margin-left:4px;
+}
+.g-meta{display:flex;gap:12px;font-size:11px;color:rgba(200,180,240,0.5);margin-bottom:8px}
+.g-contract-info{display:flex;gap:8px;margin-bottom:8px}
+.contract-badge{
+  font-size:10px;padding:2px 8px;border-radius:10px;
+}
+.contract-badge.bound{
+  background:rgba(60,120,180,0.2);color:#90c0e0;border:1px solid rgba(90,150,210,0.25);
+}
+.contract-badge.free{
+  background:rgba(100,80,40,0.2);color:#c0a060;border:1px solid rgba(180,140,80,0.2);
+}
+.affection-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.affection-label{font-size:11px;color:rgba(200,180,240,0.5)}
+.affection-bar-wrap{
+  flex:1;height:4px;background:rgba(30,20,60,0.5);border-radius:2px;overflow:hidden;
+}
+.affection-bar{
+  height:100%;border-radius:2px;
+  background:linear-gradient(90deg,#8a5aaa,#c890d0,#e8a0c0);
+  transition:width .5s;
+}
+.affection-val{font-size:11px;color:#d0b0e0;min-width:32px;text-align:right}
+.skills-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.skill-item{
+  background:rgba(20,10,40,0.35);border:1px solid rgba(160,130,220,0.1);
+  border-radius:8px;padding:6px 8px;font-size:11px;
+}
+.skill-name{color:#b8a8e0;font-weight:600;font-size:11px;margin-bottom:2px}
+.skill-desc{color:rgba(200,180,240,0.55);font-size:10px;line-height:1.4}
+.empty-state{
+  text-align:center;padding:20px;color:rgba(200,180,240,0.3);font-size:12px;
+}
+.mark-info{
+  font-size:11px;color:rgba(200,180,240,0.45);margin-top:4px;
+  border-top:1px solid rgba(160,130,220,0.1);padding-top:6px;
+}
+</style>
+</head>
+<body>
+<div class="status-wrap">
+<div class="header">
+<div class="title-area">
+<div class="title-icon">✦</div>
+<div class="title-text">神格觉醒</div>
+</div>
+<div class="timeline-badge" id="timelineBadge">--</div>
+</div>
+
+<div class="player-card" id="playerCard"></div>
+<div class="goddess-section" id="goddessSection"></div>
+</div>
+
+<script>
+(function(){
+function extractStatData(value){
+  if(!value) return null;
+  if(value.stat_data && typeof value.stat_data === 'object') return value.stat_data;
+  return null;
+}
+
+function readLatestStatData(){
+  try{
+    var fromMvu = window.Mvu && window.Mvu.getMvuData && window.Mvu.getMvuData({type:'message',message_id:-1});
+    var d=extractStatData(fromMvu);
+    if(d && d.主角) return d;
+  }catch(e){}
+  try{
+    var fromGV = window.getVariables && window.getVariables({type:'message'});
+    var d2=extractStatData(fromGV);
+    if(d2 && d2.主角) return d2;
+  }catch(e){}
+  try{
+    var fromAll = window.getAllVariables && window.getAllVariables();
+    var d3=extractStatData(fromAll);
+    if(d3 && d3.主角) return d3;
+  }catch(e){}
+  return null;
+}
+
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escYaml(s){return(s||'').replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n');}
+
+function render(data){
+  if(!data||!data.主角){$('#playerCard').html('<div class="empty-state">等待角色数据...</div>');$('#goddessSection').html('');return}
+
+  var p=data.主角.基础信息||{};
+  var world=data.世界||{};
+  var goddesses=data.女神列表||[];
+
+  $('#timelineBadge').text(world.当前时间线||'--');
+
+  var identClass='';
+  if(p.身份==='御神者') identClass='';
+  else if(p.身份==='女神') identClass='';
+  else identClass='';
+
+  var pHtml='<div class="player-header">';
+  pHtml+='<div class="player-avatar">'+(p.性别==='男'?'♂':'♀')+'</div>';
+  pHtml+='<div class="player-name">'+esc(p.姓名||'--')+'</div>';
+  pHtml+='<span class="player-identity">'+esc(p.身份||'--')+'</span>';
+  pHtml+='</div>';
+  pHtml+='<div class="player-meta">';
+  pHtml+='<div class="meta-item"><span class="meta-label">性别</span><span>'+esc(p.性别||'--')+'</span></div>';
+  pHtml+='<div class="meta-item"><span class="meta-label">年龄</span><span>'+(p.年龄||'--')+'</span></div>';
+  pHtml+='<div class="meta-item"><span class="meta-label">地点</span><span>'+esc(world.当前地点||'--')+'</span></div>';
+  pHtml+='</div>';
+  $('#playerCard').html(pHtml);
+
+  if(!goddesses.length){
+    $('#goddessSection').html('<div class="empty-state">尚未契约或遭遇女神</div>');
+    return;
+  }
+
+  var gHtml='<div class="section-title"><span>✦ 女神</span></div><div class="goddess-cards">';
+  goddesses.forEach(function(g,i){
+    var contracted=g.契约状态==='已契约';
+    var gCls=contracted?'g-card contracted':'g-card';
+    gHtml+='<div class="'+gCls+'">';
+    gHtml+='<div class="g-header"><div class="g-name-area">';
+    gHtml+='<span class="g-name">'+esc(g.姓名||'--')+'</span>';
+    if(g.神名) gHtml+='<span class="g-divine">「'+esc(g.神名)+'」</span>';
+    gHtml+='</div>';
+    gHtml+='<span class="g-mark">'+esc(g.权柄领域||'权柄未明')+'</span>';
+    gHtml+='</div>';
+    gHtml+='<div class="g-meta">';
+    gHtml+='<span>性别: '+esc(g.性别||'女')+'</span>';
+    gHtml+='<span>年龄: '+(g.年龄||'--')+'</span>';
+    gHtml+='</div>';
+    gHtml+='<div class="g-contract-info">';
+    if(contracted){
+      gHtml+='<span class="contract-badge bound">已契约 · '+esc(g.契约者||'--')+'</span>';
+      var aff=g.对契约者好感||0;
+      gHtml+='<div class="affection-row">';
+      gHtml+='<span class="affection-label">好感</span>';
+      gHtml+='<div class="affection-bar-wrap"><div class="affection-bar" style="width:'+aff+'%"></div></div>';
+      gHtml+='<span class="affection-val">'+aff+'</span>';
+      gHtml+='</div>';
+    }else{
+      gHtml+='<span class="contract-badge free">未契约</span>';
+    }
+    gHtml+='</div>';
+    gHtml+='<div class="skills-grid">';
+    for(var s=1;s<=4;s++){
+      var sk=g['技能'+s]||'';
+      gHtml+='<div class="skill-item"><div class="skill-name">技能'+s+'</div><div class="skill-desc">'+esc(sk)+'</div></div>';
+    }
+    gHtml+='</div>';
+    if(g.神印位置){
+      gHtml+='<div class="mark-info">神印: '+esc(g.神印位置)+'</div>';
+    }
+    gHtml+='</div>';
+  });
+  gHtml+='</div>';
+  $('#goddessSection').html(gHtml);
+}
+
+function refresh(){
+  var data=readLatestStatData();
+  if(data) render(data);
+}
+
+refresh();
+
+if(window.Mvu && window.Mvu.events && window.Mvu.events.VARIABLE_UPDATE_ENDED && typeof window.eventOn==='function'){
+  try{
+    window.eventOn(window.Mvu.events.VARIABLE_UPDATE_ENDED,function(){refresh();});
+  }catch(e){}
+}
+
+setInterval(function(){refresh();},2000);
+})();
+</script>
+</body>
+</html>
