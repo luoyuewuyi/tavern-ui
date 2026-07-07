@@ -1,0 +1,1993 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>适格者档案 · 角色创建</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+/* ===== 变量 & 重置 ===== */
+:root {
+  --bg: rgba(8,8,22,0.94);
+  --bg-gradient: radial-gradient(ellipse at 50% 0%, rgba(20,20,50,0.6) 0%, rgba(8,8,22,0.96) 70%);
+  --surface: rgba(14,14,38,0.85);
+  --surface-hover: rgba(22,22,52,0.92);
+  --border: rgba(100,140,240,0.14);
+  --border-focus: rgba(96,136,232,0.45);
+  --text: #c8d0e4;
+  --text-dim: rgba(160,172,200,0.6);
+  --text-bright: #eef2ff;
+  --accent: #6088e8;
+  --accent-glow: rgba(96,136,232,0.25);
+  --accent2: #8b5cf6;
+  --accent2-glow: rgba(139,92,246,0.2);
+  --gold: #e0b044;
+  --gold-dim: rgba(224,176,68,0.3);
+  --green: #5bbf7a;
+  --red: #e06060;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --font-body: 'Noto Sans SC', -apple-system, 'Segoe UI', sans-serif;
+  --font-num: 'Orbitron', monospace;
+  --transition: 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body {
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--bg);
+  background-image: var(--bg-gradient);
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px 48px;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+::selection { background: var(--accent); color: #fff; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ===== 粒子画布 ===== */
+#particleCanvas {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 0;
+}
+
+/* ===== 主容器 ===== */
+.container {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 820px;
+  background: var(--surface);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px 36px 28px;
+  box-shadow: 0 16px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);
+  transition: var(--transition);
+}
+
+/* ===== 页头 ===== */
+.header {
+  text-align: center;
+  margin-bottom: 28px;
+  position: relative;
+}
+.header::after {
+  content: '';
+  display: block;
+  width: 60px; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  margin: 12px auto 0;
+}
+.header h1 {
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 1.7rem;
+  letter-spacing: 4px;
+  background: linear-gradient(135deg, var(--text-bright) 0%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header p {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  letter-spacing: 2px;
+  margin-top: 4px;
+}
+
+/* ===== 进度指示器 ===== */
+.progress-wrapper {
+  margin-bottom: 28px;
+}
+.progress-bar-track {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  padding: 0 6px;
+}
+.progress-bar-track::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 30px; right: 30px;
+  height: 2px;
+  background: rgba(255,255,255,0.06);
+  transform: translateY(-50%);
+  z-index: 0;
+}
+.progress-bar-fill {
+  position: absolute;
+  top: 50%; left: 30px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  transform: translateY(-50%);
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+  z-index: 1;
+  border-radius: 2px;
+}
+.progress-step {
+  position: relative; z-index: 2;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+  border: 2px solid rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-num);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-dim);
+  user-select: none;
+}
+.progress-step:hover { border-color: var(--accent-glow); }
+.progress-step.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 0 20px var(--accent-glow);
+  transform: scale(1.05);
+}
+.progress-step.done {
+  background: rgba(96,136,232,0.2);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.progress-step .step-check { display: none; }
+.progress-step.done .step-check { display: inline; }
+.progress-step.done .step-num { display: none; }
+.progress-step .step-num { display: inline; }
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 4px 0;
+}
+.progress-labels span {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  transition: var(--transition);
+  text-align: center;
+  width: 20%;
+  letter-spacing: 0.5px;
+}
+.progress-labels span.active { color: var(--accent); }
+
+/* ===== 步骤容器 ===== */
+.step-container {
+  position: relative;
+  min-height: 380px;
+}
+.step-panel {
+  display: none;
+  animation: fadeSlideIn 0.45s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+.step-panel.active { display: block; }
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.step-title {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--text-bright);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.step-title i { color: var(--accent); font-size: 1rem; }
+.step-subtitle {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-bottom: 20px;
+}
+
+/* ===== 表单元素 ===== */
+.form-group {
+  margin-bottom: 14px;
+}
+.form-group label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 4px;
+  letter-spacing: 0.3px;
+}
+.form-group label .required {
+  color: var(--red);
+  margin-left: 2px;
+}
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  transition: var(--transition);
+  outline: none;
+}
+.form-input:focus,
+.form-textarea:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.form-textarea {
+  resize: vertical;
+  min-height: 70px;
+  line-height: 1.5;
+}
+.form-input::placeholder,
+.form-textarea::placeholder { color: var(--text-dim); }
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.form-hint {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-top: 3px;
+}
+
+/* Gender radio */
+.radio-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.radio-card {
+  flex: 1;
+  min-width: 80px;
+  padding: 8px 16px;
+  text-align: center;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 0.85rem;
+  user-select: none;
+}
+.radio-card:hover { background: var(--surface-hover); }
+.radio-card.selected {
+  background: rgba(96,136,232,0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.radio-card input { display: none; }
+
+/* ===== 步骤2: 属性 ===== */
+.attr-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.preset-card {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.preset-card:hover { background: var(--surface-hover); }
+.preset-card.selected {
+  background: rgba(96,136,232,0.1);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+.preset-card .preset-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-bright);
+}
+.preset-card .preset-desc {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.preset-card .preset-tag {
+  display: inline-block;
+  font-size: 0.6rem;
+  padding: 1px 8px;
+  border-radius: 10px;
+  margin-top: 4px;
+  background: var(--accent-glow);
+  color: var(--accent);
+  font-family: var(--font-num);
+}
+
+.attr-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.attr-item {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px 10px;
+}
+.attr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+.attr-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text);
+}
+.attr-value {
+  font-family: var(--font-num);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 28px;
+  text-align: right;
+}
+.attr-slider {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  outline: none;
+  transition: var(--transition);
+  cursor: pointer;
+}
+.attr-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid rgba(255,255,255,0.15);
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+.attr-slider::-webkit-slider-thumb:hover { transform: scale(1.15); }
+.attr-slider::-moz-range-thumb {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid rgba(255,255,255,0.15);
+  cursor: pointer;
+}
+.attr-stats {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.attr-remaining {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+.attr-remaining span {
+  font-family: var(--font-num);
+  color: var(--accent);
+  font-weight: 700;
+}
+.attr-remaining.over span { color: var(--red); }
+
+/* ===== 步骤3: 技能 ===== */
+.skill-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.skill-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.skill-item {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  display: grid;
+  grid-template-columns: 1fr 120px 80px;
+  gap: 8px;
+  align-items: center;
+  transition: var(--transition);
+}
+.skill-item .skill-name-input {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-family: var(--font-body);
+  outline: none;
+  transition: var(--transition);
+}
+.skill-item .skill-name-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+.skill-type-select {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  color: var(--text);
+  font-size: 0.78rem;
+  font-family: var(--font-body);
+  outline: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.skill-type-select:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+.skill-type-select option { background: rgba(8,8,22,0.95); color: var(--text); }
+.skill-prof {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.skill-prof input[type="range"] {
+  flex: 1;
+  height: 3px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+.skill-prof input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--accent2);
+  border: 2px solid rgba(255,255,255,0.1);
+  cursor: pointer;
+}
+.skill-prof input[type="range"]::-moz-range-thumb {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--accent2);
+  border: 2px solid rgba(255,255,255,0.1);
+  cursor: pointer;
+}
+.skill-prof .prof-val {
+  font-family: var(--font-num);
+  font-size: 0.8rem;
+  color: var(--accent2);
+  min-width: 28px;
+  text-align: right;
+}
+
+/* ===== 步骤4: 预览 ===== */
+.preview-card {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 14px;
+}
+.preview-section {
+  margin-bottom: 14px;
+}
+.preview-section:last-child { margin-bottom: 0; }
+.preview-section-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--accent);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.preview-basic {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 16px;
+}
+.preview-basic .preview-item {
+  display: flex;
+  gap: 4px;
+}
+.preview-basic .preview-item .label {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+}
+.preview-basic .preview-item .value {
+  color: var(--text-bright);
+  font-size: 0.82rem;
+}
+.preview-attrs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.preview-attrs .attr-badge {
+  background: rgba(96,136,232,0.08);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+}
+.preview-attrs .attr-badge .ab-name { color: var(--text-dim); }
+.preview-attrs .attr-badge .ab-val { color: var(--accent); font-weight: 600; font-family: var(--font-num); }
+.preview-skills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.preview-skills .skill-badge {
+  background: rgba(139,92,246,0.08);
+  border: 1px solid rgba(139,92,246,0.2);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+}
+.preview-skills .skill-badge .sb-name { color: var(--accent2); }
+.preview-skills .skill-badge .sb-type { color: var(--text-dim); }
+.preview-skills .skill-badge .sb-prof { color: var(--accent2); font-family: var(--font-num); }
+.preview-talents {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.preview-talents .talent-badge {
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+}
+.talent-badge.common { background: rgba(160,172,200,0.08); border: 1px solid rgba(160,172,200,0.2); color: var(--text); }
+.talent-badge.rare { background: rgba(96,136,232,0.08); border: 1px solid rgba(96,136,232,0.25); color: var(--accent); }
+.talent-badge.epic { background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.25); color: var(--accent2); }
+.talent-badge.legendary { background: rgba(224,176,68,0.08); border: 1px solid rgba(224,176,68,0.25); color: var(--gold); }
+.talent-badge .tb-name { font-weight: 500; }
+.talent-badge .tb-type { opacity: 0.7; }
+.talent-badge .tb-rank { font-size: 0.65rem; opacity: 0.7; text-transform: uppercase; }
+
+.preview-equip {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.preview-equip .equip-badge {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+}
+.equip-badge .eq-name { color: var(--text-bright); }
+.equip-badge .eq-rank { color: var(--text-dim); font-size: 0.65rem; }
+
+.preview-extra {
+  margin-top: 12px;
+}
+.preview-extra textarea {
+  width: 100%;
+  min-height: 70px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  resize: vertical;
+  outline: none;
+  transition: var(--transition);
+}
+.preview-extra textarea:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.preview-extra textarea::placeholder { color: var(--text-dim); }
+
+/* Talent generation controls */
+.talent-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.talent-controls .tc-label {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+.talent-btn {
+  padding: 4px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: rgba(0,0,0,0.2);
+  color: var(--text);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: var(--font-body);
+}
+.talent-btn:hover { background: var(--surface-hover); border-color: var(--accent-glow); }
+.talent-btn.active {
+  background: rgba(96,136,232,0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.talent-btn.regenerate { border-color: var(--accent2); color: var(--accent2); }
+.talent-btn.regenerate:hover { background: rgba(139,92,246,0.1); }
+
+/* ===== 步骤5: 确认 ===== */
+.confirm-card {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 12px;
+}
+.confirm-card .cc-title {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--accent);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.confirm-card .cc-line {
+  display: flex;
+  gap: 4px;
+  font-size: 0.82rem;
+  padding: 3px 0;
+}
+.confirm-card .cc-line .ccl-label { color: var(--text-dim); min-width: 60px; }
+.confirm-card .cc-line .ccl-value { color: var(--text-bright); }
+
+/* ===== 导航按钮 ===== */
+.nav-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.nav-btn {
+  padding: 10px 28px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: rgba(0,0,0,0.2);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-btn:hover:not(:disabled) { background: var(--surface-hover); border-color: var(--accent-glow); }
+.nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.nav-btn.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: transparent;
+  color: #fff;
+  font-weight: 500;
+}
+.nav-btn.primary:hover { box-shadow: 0 0 24px var(--accent-glow); transform: translateY(-1px); }
+.nav-btn.danger {
+  background: linear-gradient(135deg, #e06060, #c04040);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 500;
+}
+.nav-btn.danger:hover { box-shadow: 0 0 20px rgba(224,96,96,0.3); transform: translateY(-1px); }
+.nav-btn i { font-size: 0.8rem; }
+.nav-right {
+  display: flex;
+  gap: 10px;
+}
+
+/* ===== Toast 提示 ===== */
+.toast {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 24px;
+  color: var(--text);
+  font-size: 0.85rem;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  z-index: 100;
+  transition: transform 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.4s;
+  opacity: 0;
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.toast.toast-success { border-color: var(--green); }
+.toast.toast-error { border-color: var(--red); }
+.toast.toast-warning { border-color: var(--gold); }
+
+/* ===== 响应式 ===== */
+@media (max-width: 700px) {
+  .container { padding: 20px 18px 20px; }
+  .form-row { grid-template-columns: 1fr; }
+  .attr-grid { grid-template-columns: 1fr; }
+  .attr-presets { grid-template-columns: 1fr; }
+  .skill-presets { grid-template-columns: 1fr; }
+  .skill-item { grid-template-columns: 1fr; gap: 6px; }
+  .preview-basic { grid-template-columns: 1fr; }
+  .nav-btn { padding: 8px 18px; font-size: 0.8rem; }
+  .progress-step { width: 30px; height: 30px; font-size: 0.7rem; }
+  .progress-bar-track::before { left: 24px; right: 24px; }
+  .progress-bar-fill { left: 24px; }
+  .header h1 { font-size: 1.3rem; }
+}
+@media (max-width: 480px) {
+  .container { padding: 16px 12px 16px; border-radius: 14px; }
+  .nav-buttons { flex-direction: column; gap: 8px; }
+  .nav-right { width: 100%; }
+  .nav-right .nav-btn { flex: 1; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== 粒子背景 ===== -->
+<canvas id="particleCanvas"></canvas>
+
+<!-- ===== 主容器 ===== -->
+<div class="container">
+
+  <!-- ===== 页头 ===== -->
+  <div class="header">
+    <h1>适格者档案</h1>
+    <p>INFINITE REALM · 适格者身份登记</p>
+  </div>
+
+  <!-- ===== 进度指示器 ===== -->
+  <div class="progress-wrapper">
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+      <div class="progress-step active" data-step="1" onclick="goToStep(1)"><span class="step-num">1</span><span class="step-check"><i class="fas fa-check"></i></span></div>
+      <div class="progress-step" data-step="2" onclick="goToStep(2)"><span class="step-num">2</span><span class="step-check"><i class="fas fa-check"></i></span></div>
+      <div class="progress-step" data-step="3" onclick="goToStep(3)"><span class="step-num">3</span><span class="step-check"><i class="fas fa-check"></i></span></div>
+      <div class="progress-step" data-step="4" onclick="goToStep(4)"><span class="step-num">4</span><span class="step-check"><i class="fas fa-check"></i></span></div>
+      <div class="progress-step" data-step="5" onclick="goToStep(5)"><span class="step-num">5</span><span class="step-check"><i class="fas fa-check"></i></span></div>
+    </div>
+    <div class="progress-labels">
+      <span class="active">基本信息</span>
+      <span>属性分配</span>
+      <span>技能选择</span>
+      <span>最终预览</span>
+      <span>确认导入</span>
+    </div>
+  </div>
+
+  <!-- ===== 步骤容器 ===== -->
+  <div class="step-container">
+
+    <!-- ===== 步骤1: 问卷 ===== -->
+    <div class="step-panel active" id="step1">
+      <div class="step-title"><i class="fas fa-file-signature"></i> 基本信息登记</div>
+      <div class="step-subtitle">适格者，请填写你的基础档案。这些信息将决定你在无限世界中的初始形象。</div>
+
+      <div class="form-group">
+        <label>姓名 <span class="required">*</span></label>
+        <input type="text" class="form-input" id="charName" placeholder="输入角色姓名..." maxlength="20">
+      </div>
+
+      <div class="form-group">
+        <label>性别</label>
+        <div class="radio-group" id="genderGroup">
+          <div class="radio-card selected" data-value="男" onclick="selectGender(this)"><i class="fas fa-mars" style="margin-right:4px"></i> 男</div>
+          <div class="radio-card" data-value="女" onclick="selectGender(this)"><i class="fas fa-venus" style="margin-right:4px"></i> 女</div>
+          <div class="radio-card" data-value="自定义" onclick="selectGender(this)"><i class="fas fa-user-astronaut" style="margin-right:4px"></i> 自定义</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>性格</label>
+        <textarea class="form-textarea" id="charPersonality" placeholder="描述角色的性格特征…如：冷静果断，有领导力，但在危机时刻会表现出偏执的一面" rows="2"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>外貌</label>
+        <textarea class="form-textarea" id="charAppearance" placeholder="描述角色的外貌特征…如：高瘦身材，黑发黑瞳，左眉一道旧伤疤" rows="2"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>背景故事</label>
+        <textarea class="form-textarea" id="charBackground" placeholder="描述角色的过往经历…如：退伍军人，在一次秘密任务中被一道白光吞噬，醒来时已身处陌生空间" rows="3"></textarea>
+      </div>
+    </div>
+
+    <!-- ===== 步骤2: 属性 ===== -->
+    <div class="step-panel" id="step2">
+      <div class="step-title"><i class="fas fa-dice-d6"></i> 属性分配</div>
+      <div class="step-subtitle">分配你的初始属性点数。总计 <strong id="totalPointsDisplay" style="color:var(--accent);font-family:var(--font-num)">30</strong> 点，请谨慎选择。</div>
+
+      <div class="attr-presets" id="attrPresets">
+        <div class="preset-card" data-preset="strength" onclick="selectAttrPreset('strength')">
+          <div class="preset-name"><i class="fas fa-fist-raised" style="margin-right:4px;color:var(--red)"></i> 力量型</div>
+          <div class="preset-desc">高力量高体质，近战专精</div>
+          <div class="preset-tag">STR 12 · CON 12</div>
+        </div>
+        <div class="preset-card selected" data-preset="agility" onclick="selectAttrPreset('agility')">
+          <div class="preset-name"><i class="fas fa-running" style="margin-right:4px;color:var(--green)"></i> 敏捷型</div>
+          <div class="preset-desc">极限敏捷，快速反应</div>
+          <div class="preset-tag">DEX 14 · PER 8</div>
+        </div>
+        <div class="preset-card" data-preset="intelligence" onclick="selectAttrPreset('intelligence')">
+          <div class="preset-name"><i class="fas fa-brain" style="margin-right:4px;color:var(--accent2)"></i> 智力型</div>
+          <div class="preset-desc">高智力高精神，策略专精</div>
+          <div class="preset-tag">INT 14 · SPI 10</div>
+        </div>
+      </div>
+
+      <div class="attr-grid" id="attrGrid">
+        <div class="attr-item">
+          <div class="attr-header">
+            <span class="attr-name"><i class="fas fa-fist-raised" style="color:var(--red);font-size:0.75rem;margin-right:4px"></i>力量 STR</span>
+            <span class="attr-value" id="attrVal0">1</span>
+          </div>
+          <input type="range" class="attr-slider" id="attrSlider0" min="1" max="18" value="6" oninput="updateAttr(0)">
+        </div>
+        <div class="attr-item">
+          <div class="attr-header">
+            <span class="attr-name"><i class="fas fa-running" style="color:var(--green);font-size:0.75rem;margin-right:4px"></i>敏捷 DEX</span>
+            <span class="attr-value" id="attrVal1">1</span>
+          </div>
+          <input type="range" class="attr-slider" id="attrSlider1" min="1" max="18" value="14" oninput="updateAttr(1)">
+        </div>
+        <div class="attr-item">
+          <div class="attr-header">
+            <span class="attr-name"><i class="fas fa-heart" style="color:#e06060;font-size:0.75rem;margin-right:4px"></i>体质 CON</span>
+            <span class="attr-value" id="attrVal2">1</span>
+          </div>
+          <input type="range" class="attr-slider" id="attrSlider2" min="1" max="18" value="8" oninput="updateAttr(2)">
+        </div>
+        <div class="attr-item">
+          <div class="attr-header">
+            <span class="attr-name"><i class="fas fa-eye" style="color:var(--accent);font-size:0.75rem;margin-right:4px"></i>精神 PER</span>
+            <span class="attr-value" id="attrVal3">1</span>
+          </div>
+          <input type="range" class="attr-slider" id="attrSlider3" min="1" max="18" value="8" oninput="updateAttr(3)">
+        </div>
+        <div class="attr-item">
+          <div class="attr-header">
+            <span class="attr-name"><i class="fas fa-brain" style="color:var(--accent2);font-size:0.75rem;margin-right:4px"></i>智力 INT</span>
+            <span class="attr-value" id="attrVal4">1</span>
+          </div>
+          <input type="range" class="attr-slider" id="attrSlider4" min="1" max="18" value="8" oninput="updateAttr(4)">
+        </div>
+        <div class="attr-item">
+          <div class="attr-header">
+            <span class="attr-name"><i class="fas fa-star" style="color:var(--gold);font-size:0.75rem;margin-right:4px"></i>魅力 CHA</span>
+            <span class="attr-value" id="attrVal5">1</span>
+          </div>
+          <input type="range" class="attr-slider" id="attrSlider5" min="1" max="18" value="6" oninput="updateAttr(5)">
+        </div>
+      </div>
+
+      <div class="attr-stats">
+        <div class="attr-remaining" id="remainingDisplay">剩余点数：<span>0</span></div>
+        <div class="attr-remaining" id="totalDisplay">已分配：<span>30</span></div>
+      </div>
+    </div>
+
+    <!-- ===== 步骤3: 技能 ===== -->
+    <div class="step-panel" id="step3">
+      <div class="step-title"><i class="fas fa-bolt"></i> 技能选择</div>
+      <div class="step-subtitle">选择或自定义你的初始技能。每个技能包含名称、类型和熟练度(10-100)。</div>
+
+      <div class="skill-presets" id="skillPresets">
+        <div class="preset-card" data-skill-preset="strength" onclick="selectSkillPreset('strength')">
+          <div class="preset-name"><i class="fas fa-fist-raised" style="color:var(--red)"></i> 力量型技能</div>
+          <div class="preset-desc">重击·坚韧·威吓</div>
+        </div>
+        <div class="preset-card selected" data-skill-preset="agility" onclick="selectSkillPreset('agility')">
+          <div class="preset-name"><i class="fas fa-running" style="color:var(--green)"></i> 敏捷型技能</div>
+          <div class="preset-desc">闪避·潜行·开锁</div>
+        </div>
+        <div class="preset-card" data-skill-preset="intelligence" onclick="selectSkillPreset('intelligence')">
+          <div class="preset-name"><i class="fas fa-brain" style="color:var(--accent2)"></i> 智力型技能</div>
+          <div class="preset-desc">分析·急救·学识</div>
+        </div>
+      </div>
+
+      <div class="skill-grid" id="skillGrid">
+        <!-- 技能1 -->
+        <div class="skill-item">
+          <input type="text" class="skill-name-input" placeholder="技能名称" value="闪避" maxlength="12">
+          <select class="skill-type-select">
+            <option value="战斗">⚔️ 战斗</option>
+            <option value="生存">🏕️ 生存</option>
+            <option value="感知">👁️ 感知</option>
+            <option value="操控">🎭 操控</option>
+            <option value="辅助">💫 辅助</option>
+            <option value="特殊">🌀 特殊</option>
+          </select>
+          <div class="skill-prof">
+            <input type="range" min="10" max="100" value="40" oninput="updateSkillProf(this)">
+            <span class="prof-val">40</span>
+          </div>
+        </div>
+        <!-- 技能2 -->
+        <div class="skill-item">
+          <input type="text" class="skill-name-input" placeholder="技能名称" value="潜行" maxlength="12">
+          <select class="skill-type-select">
+            <option value="战斗">⚔️ 战斗</option>
+            <option value="生存" selected>🏕️ 生存</option>
+            <option value="感知">👁️ 感知</option>
+            <option value="操控">🎭 操控</option>
+            <option value="辅助">💫 辅助</option>
+            <option value="特殊">🌀 特殊</option>
+          </select>
+          <div class="skill-prof">
+            <input type="range" min="10" max="100" value="35" oninput="updateSkillProf(this)">
+            <span class="prof-val">35</span>
+          </div>
+        </div>
+        <!-- 技能3 -->
+        <div class="skill-item">
+          <input type="text" class="skill-name-input" placeholder="技能名称" value="开锁" maxlength="12">
+          <select class="skill-type-select">
+            <option value="战斗">⚔️ 战斗</option>
+            <option value="生存">🏕️ 生存</option>
+            <option value="感知">👁️ 感知</option>
+            <option value="操控">🎭 操控</option>
+            <option value="辅助">💫 辅助</option>
+            <option value="特殊" selected>🌀 特殊</option>
+          </select>
+          <div class="skill-prof">
+            <input type="range" min="10" max="100" value="25" oninput="updateSkillProf(this)">
+            <span class="prof-val">25</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 步骤4: 预览与微调 ===== -->
+    <div class="step-panel" id="step4">
+      <div class="step-title"><i class="fas fa-eye"></i> 最终预览与微调</div>
+      <div class="step-subtitle">检查你的角色卡，系统已根据你的设定自动生成了初始装备和天赋。</div>
+
+      <div class="preview-card">
+        <!-- 基本信息 -->
+        <div class="preview-section">
+          <div class="preview-section-title"><i class="fas fa-id-card"></i> 基本信息</div>
+          <div class="preview-basic" id="previewBasic">
+            <div class="preview-item"><span class="label">姓名</span><span class="value" id="pvName">—</span></div>
+            <div class="preview-item"><span class="label">性别</span><span class="value" id="pvGender">—</span></div>
+            <div class="preview-item" style="grid-column:1/-1"><span class="label">性格</span><span class="value" id="pvPersonality">—</span></div>
+            <div class="preview-item" style="grid-column:1/-1"><span class="label">外貌</span><span class="value" id="pvAppearance">—</span></div>
+            <div class="preview-item" style="grid-column:1/-1"><span class="label">背景</span><span class="value" id="pvBackground">—</span></div>
+          </div>
+        </div>
+
+        <!-- 属性 -->
+        <div class="preview-section">
+          <div class="preview-section-title"><i class="fas fa-dice-d6"></i> 属性</div>
+          <div class="preview-attrs" id="previewAttrs"></div>
+        </div>
+
+        <!-- 技能 -->
+        <div class="preview-section">
+          <div class="preview-section-title"><i class="fas fa-bolt"></i> 技能</div>
+          <div class="preview-skills" id="previewSkills"></div>
+        </div>
+
+        <!-- 天赋 -->
+        <div class="preview-section">
+          <div class="preview-section-title"><i class="fas fa-star"></i> 天赋</div>
+          <div class="talent-controls">
+            <span class="tc-label">生成方式：</span>
+            <button class="talent-btn active" data-talent-mode="auto" onclick="setTalentMode('auto')">自动生成</button>
+            <button class="talent-btn" data-talent-mode="manual" onclick="setTalentMode('manual')">手动选择</button>
+            <button class="talent-btn" data-talent-mode="none" onclick="setTalentMode('none')">不要天赋</button>
+            <button class="talent-btn regenerate" onclick="regenerateTalents()"><i class="fas fa-sync-alt"></i> 重新生成</button>
+          </div>
+          <div class="preview-talents" id="previewTalents"></div>
+        </div>
+
+        <!-- 初始装备 -->
+        <div class="preview-section">
+          <div class="preview-section-title"><i class="fas fa-shield-alt"></i> 初始装备</div>
+          <div class="preview-equip" id="previewEquip"></div>
+        </div>
+      </div>
+
+      <!-- 补充说明 -->
+      <div class="preview-extra">
+        <label style="font-size:0.82rem;color:var(--text-dim);display:block;margin-bottom:4px;"><i class="fas fa-pen"></i> 补充修改（可选）</label>
+        <textarea id="previewExtra" placeholder="如果你还有想要补充或修改的内容，请在此说明…"></textarea>
+      </div>
+    </div>
+
+    <!-- ===== 步骤5: 确认导入 ===== -->
+    <div class="step-panel" id="step5">
+      <div class="step-title"><i class="fas fa-check-circle"></i> 确认与导入</div>
+      <div class="step-subtitle">请最后确认你的角色档案。确认后，数据将被发送至主神空间生成开场剧情。</div>
+
+      <div class="confirm-card">
+        <div class="cc-title"><i class="fas fa-robot"></i> 适格者档案 · 最终确认</div>
+        <div id="confirmContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 导航按钮 ===== -->
+  <div class="nav-buttons">
+    <button class="nav-btn" id="prevBtn" onclick="prevStep()" disabled><i class="fas fa-arrow-left"></i> 上一步</button>
+    <div class="nav-right">
+      <button class="nav-btn primary" id="nextBtn" onclick="nextStep()">下一步 <i class="fas fa-arrow-right"></i></button>
+      <button class="nav-btn danger" id="confirmBtn" onclick="confirmImport()" style="display:none"><i class="fas fa-check"></i> 确认导入</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Toast ===== -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   全局状态
+   ============================================================ */
+const STATE = {
+  currentStep: 1,
+  totalSteps: 5,
+  // 基本信息
+  name: '',
+  gender: '男',
+  personality: '',
+  appearance: '',
+  background: '',
+  // 属性
+  attrs: [6, 14, 8, 8, 8, 6],
+  attrNames: ['力量', '敏捷', '体质', '精神', '智力', '魅力'],
+  attrKeys: ['STR', 'DEX', 'CON', 'PER', 'INT', 'CHA'],
+  attrPreset: 'agility',
+  totalPoints: 30,
+  // 技能
+  skillPreset: 'agility',
+  // 天赋
+  talentMode: 'auto', // 'auto' | 'manual' | 'none'
+  talents: [],
+  // 装备
+  equipment: [],
+};
+
+/* ============================================================
+   Talent & Equipment 数据库
+   ============================================================ */
+const TALENT_POOL = {
+  combat: {
+    name: '战斗',
+    pool: [
+      { name: '战场直觉', desc: '战斗中预判敌人行动', rank: 'rare' },
+      { name: '战斗狂热', desc: '受伤后战斗力提升', rank: 'rare' },
+      { name: '武器精通', desc: '快速掌握任何武器', rank: 'common' },
+      { name: '格斗大师', desc: '徒手格斗伤害翻倍', rank: 'epic' },
+      { name: '杀戮节奏', desc: '连续击杀后攻速提升', rank: 'rare' },
+      { name: '铁壁防御', desc: '防御姿态下减免伤害', rank: 'common' },
+      { name: '绝境反击', desc: '生命垂危时全属性爆发', rank: 'epic' },
+      { name: '无双之势', desc: '面对多名敌人时战力增幅', rank: 'legendary' },
+    ]
+  },
+  survival: {
+    name: '生存',
+    pool: [
+      { name: '钢铁意志', desc: '抵抗精神控制', rank: 'common' },
+      { name: '危机感应', desc: '提前感知危险', rank: 'rare' },
+      { name: '适应力', desc: '快速适应极端环境', rank: 'common' },
+      { name: '幸运儿', desc: '小概率事件倾向于你', rank: 'epic' },
+      { name: '荒野求生', desc: '野外生存能力大幅提升', rank: 'common' },
+      { name: '毒抗体质', desc: '毒素效果减半', rank: 'rare' },
+      { name: '不灭之体', desc: '生命恢复速度翻倍', rank: 'epic' },
+      { name: '命运垂青', desc: '每天一次必定幸运', rank: 'legendary' },
+    ]
+  },
+  perception: {
+    name: '感知',
+    pool: [
+      { name: '第六感', desc: '直觉异常敏锐', rank: 'rare' },
+      { name: '危险预知', desc: '预判3秒内的危险', rank: 'epic' },
+      { name: '洞察入微', desc: '发现常人忽略的细节', rank: 'common' },
+      { name: '心眼', desc: '闭眼也能感知周围', rank: 'rare' },
+      { name: '气息追踪', desc: '追踪目标气味或痕迹', rank: 'common' },
+      { name: '读风辨位', desc: '通过气流变化判断环境', rank: 'common' },
+      { name: '因果感知', desc: '隐约感知事件因果关联', rank: 'legendary' },
+    ]
+  },
+  control: {
+    name: '操控',
+    pool: [
+      { name: '精神操控', desc: '微弱影响他人思维', rank: 'epic' },
+      { name: '魅惑', desc: '提升交涉成功率', rank: 'rare' },
+      { name: '威压', desc: '释放气势震慑对手', rank: 'common' },
+      { name: '心灵感应', desc: '有限的心灵沟通', rank: 'rare' },
+      { name: '记忆编织', desc: '植入或修改片段记忆', rank: 'epic' },
+      { name: '情绪共鸣', desc: '感知并影响他人情绪', rank: 'common' },
+    ]
+  },
+  support: {
+    name: '辅助',
+    pool: [
+      { name: '治疗之光', desc: '加速伤口愈合', rank: 'rare' },
+      { name: '能量灌注', desc: '短暂提升目标能力', rank: 'common' },
+      { name: '精神护盾', desc: '抵抗精神攻击', rank: 'common' },
+      { name: '净化', desc: '驱散负面状态', rank: 'rare' },
+      { name: '生命链接', desc: '分担队友伤害', rank: 'epic' },
+      { name: '时空锚点', desc: '标记位置回溯', rank: 'legendary' },
+    ]
+  },
+  special: {
+    name: '特殊',
+    pool: [
+      { name: '空间感知', desc: '感知空间结构异常', rank: 'epic' },
+      { name: '时间延缓', desc: '危机时主观时间变慢', rank: 'epic' },
+      { name: '因果干涉', desc: '微小改变影响结果', rank: 'legendary' },
+      { name: '命运扭转', desc: '每天一次扭转不利局面', rank: 'legendary' },
+      { name: '混沌亲和', desc: '混乱中汲取力量', rank: 'rare' },
+      { name: '世界之声', desc: '隐约听到世界规则的提示', rank: 'epic' },
+    ]
+  }
+};
+
+const RANK_LABEL = { common: '普通', rare: '稀有', epic: '史诗', legendary: '传说' };
+const RANK_ORDER = { common: 0, rare: 1, epic: 2, legendary: 3 };
+
+const EQUIPMENT_POOL = {
+  combat: [
+    { name: '军用匕首', rank: 'common' },
+    { name: '战术手斧', rank: 'common' },
+    { name: '格斗指虎', rank: 'common' },
+    { name: '合金匕首', rank: 'rare' },
+    { name: '多功能战斗刀', rank: 'common' },
+  ],
+  range: [
+    { name: '短柄手枪', rank: 'common' },
+    { name: '弩', rank: 'common' },
+    { name: '飞刀×5', rank: 'common' },
+    { name: '腕部袖箭', rank: 'rare' },
+  ],
+  defense: [
+    { name: '战术背心', rank: 'common' },
+    { name: '护腕', rank: 'common' },
+    { name: '轻量护甲', rank: 'rare' },
+    { name: '反应装甲', rank: 'rare' },
+  ],
+  survival: [
+    { name: '急救包', rank: 'common' },
+    { name: '压缩干粮×3', rank: 'common' },
+    { name: '净水器', rank: 'common' },
+    { name: '信号弹×2', rank: 'common' },
+    { name: '多功能工具', rank: 'common' },
+    { name: '夜视仪', rank: 'rare' },
+  ],
+  utility: [
+    { name: '通讯器', rank: 'common' },
+    { name: '战术手电', rank: 'common' },
+    { name: '绳索10m', rank: 'common' },
+    { name: '能量饮料×2', rank: 'common' },
+    { name: '笔记本和笔', rank: 'common' },
+  ],
+  tech: [
+    { name: '扫描仪', rank: 'rare' },
+    { name: '便携终端', rank: 'common' },
+    { name: '分析试剂盒', rank: 'common' },
+  ]
+};
+
+/* ============================================================
+   粒子背景
+   ============================================================ */
+(function initParticles() {
+  var canvas = document.getElementById('particleCanvas');
+  var ctx = canvas.getContext('2d');
+  var particles = [];
+  var count = 70;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  for (var i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      r: Math.random() * 1.8 + 0.5,
+      a: Math.random() * 0.5 + 0.1,
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0) p.x = canvas.width;
+      if (p.x > canvas.width) p.x = 0;
+      if (p.y < 0) p.y = canvas.height;
+      if (p.y > canvas.height) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(100,140,240,' + p.a + ')';
+      ctx.fill();
+    }
+    // connections
+    for (var i = 0; i < particles.length; i++) {
+      for (var j = i + 1; j < particles.length; j++) {
+        var dx = particles[i].x - particles[j].x;
+        var dy = particles[i].y - particles[j].y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 150) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = 'rgba(100,140,240,' + (0.06 * (1 - dist / 150)) + ')';
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ============================================================
+   Toast 提示
+   ============================================================ */
+var toastTimer = null;
+function showToast(msg, type) {
+  type = type || '';
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast toast-' + type + ' show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { el.classList.remove('show'); }, 3000);
+}
+
+/* ============================================================
+   步骤导航
+   ============================================================ */
+function goToStep(n) {
+  if (n < 1 || n > STATE.totalSteps) return;
+  // 不允许跳过未完成的步骤
+  if (n > STATE.currentStep + 1) return;
+  if (n < STATE.currentStep - 1 && STATE.currentStep > n + 1) {
+    // allow going back freely
+  }
+  STATE.currentStep = n;
+  renderStep();
+}
+
+function nextStep() {
+  if (!validateCurrentStep()) return;
+  if (STATE.currentStep < STATE.totalSteps) {
+    // 如果是步骤4，需要生成预览数据
+    if (STATE.currentStep === 4) {
+      generatePreview();
+    }
+    // 如果是步骤5，需要生成确认数据
+    if (STATE.currentStep === 5) {
+      // will be handled by the confirm page
+    }
+    STATE.currentStep++;
+    renderStep();
+  }
+}
+
+function prevStep() {
+  if (STATE.currentStep > 1) {
+    STATE.currentStep--;
+    renderStep();
+  }
+}
+
+function validateCurrentStep() {
+  var s = STATE.currentStep;
+  if (s === 1) {
+    var name = document.getElementById('charName').value.trim();
+    if (!name) {
+      showToast('请输入角色姓名', 'error');
+      document.getElementById('charName').focus();
+      return false;
+    }
+    // Save
+    STATE.name = name;
+    STATE.gender = document.querySelector('#genderGroup .radio-card.selected').getAttribute('data-value');
+    STATE.personality = document.getElementById('charPersonality').value.trim();
+    STATE.appearance = document.getElementById('charAppearance').value.trim();
+    STATE.background = document.getElementById('charBackground').value.trim();
+    return true;
+  }
+  if (s === 2) {
+    // attrs are already synced via slider events
+    return true;
+  }
+  if (s === 3) {
+    // Validate skills have names
+    var inputs = document.querySelectorAll('#skillGrid .skill-name-input');
+    for (var i = 0; i < inputs.length; i++) {
+      if (!inputs[i].value.trim()) {
+        showToast('请填写第 ' + (i + 1) + ' 个技能的名称', 'warning');
+        inputs[i].focus();
+        return false;
+      }
+    }
+    return true;
+  }
+  if (s === 4) {
+    return true;
+  }
+  return true;
+}
+
+function renderStep() {
+  var i;
+  // Panels
+  var panels = document.querySelectorAll('.step-panel');
+  for (i = 0; i < panels.length; i++) {
+    panels[i].classList.remove('active');
+  }
+  document.getElementById('step' + STATE.currentStep).classList.add('active');
+
+  // Progress dots
+  var dots = document.querySelectorAll('.progress-step');
+  for (i = 0; i < dots.length; i++) {
+    dots[i].classList.remove('active', 'done');
+    var stepNum = parseInt(dots[i].getAttribute('data-step'));
+    if (stepNum === STATE.currentStep) dots[i].classList.add('active');
+    else if (stepNum < STATE.currentStep) dots[i].classList.add('done');
+  }
+
+  // Progress fill line
+  var fill = document.getElementById('progressFill');
+  var pct = ((STATE.currentStep - 1) / (STATE.totalSteps - 1)) * 100;
+  fill.style.width = pct + '%';
+
+  // Labels
+  var labels = document.querySelectorAll('.progress-labels span');
+  for (i = 0; i < labels.length; i++) {
+    labels[i].classList.toggle('active', i + 1 === STATE.currentStep);
+  }
+
+  // Buttons
+  document.getElementById('prevBtn').disabled = STATE.currentStep === 1;
+  document.getElementById('nextBtn').style.display = STATE.currentStep < STATE.totalSteps ? 'inline-flex' : 'none';
+  document.getElementById('confirmBtn').style.display = STATE.currentStep === STATE.totalSteps ? 'inline-flex' : 'none';
+
+  // When entering step 4, generate preview
+  if (STATE.currentStep === 4) {
+    generatePreview();
+  }
+  if (STATE.currentStep === 5) {
+    generateConfirm();
+  }
+
+  // Sync ATTRIBUTE values from STATE into sliders when entering step 2 or if already there
+  if (STATE.currentStep === 2) {
+    syncAttrSlidersFromState();
+  }
+
+  // Sync skill preset
+  if (STATE.currentStep === 3) {
+    syncSkillPresetUI();
+  }
+}
+
+/* ============================================================
+   步骤1: 性别选择
+   ============================================================ */
+function selectGender(el) {
+  document.querySelectorAll('#genderGroup .radio-card').forEach(function(c) { c.classList.remove('selected'); });
+  el.classList.add('selected');
+}
+
+/* ============================================================
+   步骤2: 属性
+   ============================================================ */
+var attrPresetsData = {
+  strength: { values: [12, 6, 12, 6, 6, 6], label: '力量型' },
+  agility: { values: [6, 14, 8, 8, 8, 6], label: '敏捷型' },
+  intelligence: { values: [6, 8, 6, 10, 14, 6], label: '智力型' }
+};
+
+// When sliders change
+function updateAttr(idx) {
+  var slider = document.getElementById('attrSlider' + idx);
+  var val = parseInt(slider.value);
+  STATE.attrs[idx] = val;
+  document.getElementById('attrVal' + idx).textContent = val;
+  updateAttrStats();
+  // Clear preset selection if modified
+  if (STATE.attrPreset) {
+    STATE.attrPreset = null;
+    document.querySelectorAll('#attrPresets .preset-card').forEach(function(c) { c.classList.remove('selected'); });
+  }
+}
+
+function updateAttrStats() {
+  var total = STATE.attrs.reduce(function(a, b) { return a + b; }, 0);
+  var remaining = STATE.totalPoints - (total - 6); // each attr starts at 1, so base = 6
+  var remEl = document.getElementById('remainingDisplay');
+  remEl.querySelector('span').textContent = remaining;
+  remEl.classList.toggle('over', remaining < 0);
+  document.getElementById('totalDisplay').querySelector('span').textContent = total;
+
+  // Auto-adjust: we use the constraint that total = 30 + 6 = 36 max all attr add to 36
+  // Each attr min 1, max 18
+  // Remaining = 30 - (sum - 6) = 36 - sum
+  // We allow over/under but show warning
+}
+
+function syncAttrSlidersFromState() {
+  for (var i = 0; i < 6; i++) {
+    var slider = document.getElementById('attrSlider' + i);
+    slider.value = STATE.attrs[i];
+    document.getElementById('attrVal' + i).textContent = STATE.attrs[i];
+  }
+  updateAttrStats();
+}
+
+function selectAttrPreset(key) {
+  var preset = attrPresetsData[key];
+  if (!preset) return;
+  STATE.attrPreset = key;
+  STATE.attrs = preset.values.slice();
+  document.querySelectorAll('#attrPresets .preset-card').forEach(function(c) {
+    c.classList.toggle('selected', c.getAttribute('data-preset') === key);
+  });
+  syncAttrSlidersFromState();
+}
+
+/* ============================================================
+   步骤3: 技能
+   ============================================================ */
+var skillPresetsData = {
+  strength: {
+    skills: [
+      { name: '重击', type: '战斗', prof: 40 },
+      { name: '坚韧', type: '生存', prof: 35 },
+      { name: '威吓', type: '操控', prof: 25 }
+    ]
+  },
+  agility: {
+    skills: [
+      { name: '闪避', type: '战斗', prof: 40 },
+      { name: '潜行', type: '生存', prof: 35 },
+      { name: '开锁', type: '特殊', prof: 25 }
+    ]
+  },
+  intelligence: {
+    skills: [
+      { name: '分析', type: '感知', prof: 40 },
+      { name: '急救', type: '辅助', prof: 35 },
+      { name: '学识', type: '感知', prof: 25 }
+    ]
+  }
+};
+
+function selectSkillPreset(key) {
+  STATE.skillPreset = key;
+  document.querySelectorAll('#skillPresets .preset-card').forEach(function(c) {
+    c.classList.toggle('selected', c.getAttribute('data-skill-preset') === key);
+  });
+  applySkillPreset(key);
+}
+
+function applySkillPreset(key) {
+  var data = skillPresetsData[key];
+  if (!data) return;
+  var items = document.querySelectorAll('#skillGrid .skill-item');
+  for (var i = 0; i < items.length && i < data.skills.length; i++) {
+    var sk = data.skills[i];
+    var nameInput = items[i].querySelector('.skill-name-input');
+    var typeSelect = items[i].querySelector('.skill-type-select');
+    var profRange = items[i].querySelector('input[type="range"]');
+    var profVal = items[i].querySelector('.prof-val');
+    nameInput.value = sk.name;
+    // Find option
+    for (var j = 0; j < typeSelect.options.length; j++) {
+      if (typeSelect.options[j].value === sk.type) {
+        typeSelect.selectedIndex = j;
+        break;
+      }
+    }
+    profRange.value = sk.prof;
+    profVal.textContent = sk.prof;
+  }
+}
+
+function syncSkillPresetUI() {
+  document.querySelectorAll('#skillPresets .preset-card').forEach(function(c) {
+    c.classList.toggle('selected', c.getAttribute('data-skill-preset') === STATE.skillPreset);
+  });
+  applySkillPreset(STATE.skillPreset);
+}
+
+function updateSkillProf(el) {
+  var val = el.value;
+  el.parentElement.querySelector('.prof-val').textContent = val;
+}
+
+/* ============================================================
+   步骤4: 生成预览 (天赋 & 装备)
+   ============================================================ */
+function generatePreview() {
+  // Basic info
+  document.getElementById('pvName').textContent = STATE.name || '—';
+  document.getElementById('pvGender').textContent = STATE.gender || '—';
+  document.getElementById('pvPersonality').textContent = STATE.personality || '未填写';
+  document.getElementById('pvAppearance').textContent = STATE.appearance || '未填写';
+  document.getElementById('pvBackground').textContent = STATE.background || '未填写';
+
+  // Attrs
+  var attrsHTML = '';
+  for (var i = 0; i < 6; i++) {
+    attrsHTML += '<div class="attr-badge"><span class="ab-name">' + STATE.attrNames[i] + ' ' + STATE.attrKeys[i] + '</span> <span class="ab-val">' + STATE.attrs[i] + '</span></div>';
+  }
+  document.getElementById('previewAttrs').innerHTML = attrsHTML;
+
+  // Skills
+  var skillItems = document.querySelectorAll('#skillGrid .skill-item');
+  var skillsHTML = '';
+  for (var i = 0; i < skillItems.length; i++) {
+    var sn = skillItems[i].querySelector('.skill-name-input').value.trim();
+    var st = skillItems[i].querySelector('.skill-type-select').value;
+    var sp = skillItems[i].querySelector('input[type="range"]').value;
+    if (sn) {
+      skillsHTML += '<div class="skill-badge"><span class="sb-name">' + sn + '</span> <span class="sb-type">[' + st + ']</span> <span class="sb-prof">' + sp + '</span></div>';
+    }
+  }
+  document.getElementById('previewSkills').innerHTML = skillsHTML || '<span style="color:var(--text-dim);font-size:0.78rem">未设置</span>';
+
+  // Generate talents
+  generateTalents();
+
+  // Generate equipment
+  generateEquipment();
+}
+
+function generateTalents() {
+  if (STATE.talentMode === 'none') {
+    STATE.talents = [];
+    renderTalents();
+    return;
+  }
+
+  if (STATE.talentMode === 'auto' && STATE.talents.length === 0) {
+    STATE.talents = createRandomTalents(2);
+    renderTalents();
+    return;
+  }
+
+  if (STATE.talentMode === 'auto' && STATE.talents.length > 0) {
+    // Keep existing
+    renderTalents();
+    return;
+  }
+
+  if (STATE.talentMode === 'manual') {
+    // For manual, if empty, generate some to start
+    if (STATE.talents.length === 0) {
+      STATE.talents = createRandomTalents(2);
+    }
+    renderTalents();
+  }
+}
+
+function createRandomTalents(count) {
+  var allTypes = Object.keys(TALENT_POOL);
+  var selected = [];
+  var usedKeys = {};
+
+  // Determine primary talent type based on highest attr
+  var maxAttrIdx = 0;
+  for (var i = 1; i < 6; i++) {
+    if (STATE.attrs[i] > STATE.attrs[maxAttrIdx]) maxAttrIdx = i;
+  }
+  var primaryTypeMap = ['combat', 'survival', 'survival', 'perception', 'control', 'control'];
+  // strength -> combat, dex -> survival, con -> survival, per -> perception, int -> control, cha -> control
+  // But let's make it more interesting:
+  var typeMap = ['combat', 'combat', 'survival', 'perception', 'special', 'control'];
+  // Actually map by highest:
+  // 0:str->combat, 1:dex->survival, 2:con->survival, 3:per->perception, 4:int->special, 5:cha->control
+  var highestTypeMap = ['combat', 'survival', 'survival', 'perception', 'special', 'control'];
+  var primaryType = highestTypeMap[maxAttrIdx];
+
+  // Get second type based on second highest
+  var sorted = STATE.attrs.map(function(v, idx) { return {v:v, idx:idx}; }).sort(function(a, b) { return b.v - a.v; });
+  var secondType = highestTypeMap[sorted[1].idx];
+  if (secondType === primaryType) {
+    var types = Object.keys(TALENT_POOL);
+    secondType = types[(types.indexOf(primaryType) + 1) % types.length];
+  }
+
+  var typesToUse = [primaryType, secondType];
+  if (count > 2) typesToUse.push(Object.keys(TALENT_POOL)[Math.floor(Math.random() * Object.keys(TALENT_POOL).length)]);
+
+  for (var i = 0; i < count; i++) {
+    var type = typesToUse[i % typesToUse.length];
+    var pool = TALENT_POOL[type].pool;
+    // Pick random talent not already selected
+    var available = pool.filter(function(t) { return !usedKeys[t.name]; });
+    if (available.length === 0) {
+      // Pick from any type
+      var anyType = Object.keys(TALENT_POOL)[Math.floor(Math.random() * Object.keys(TALENT_POOL).length)];
+      available = TALENT_POOL[anyType].pool.filter(function(t) { return !usedKeys[t.name]; });
+    }
+    if (available.length === 0) break;
+
+    var pick = available[Math.floor(Math.random() * available.length)];
+    usedKeys[pick.name] = true;
+    // Randomize rank slightly (bias toward common/rare)
+    var ranks = ['common', 'common', 'rare', 'rare', 'epic'];
+    var rank = ranks[Math.floor(Math.random() * ranks.length)];
+    // Keep the original rank if it's higher
+    if (RANK_ORDER[pick.rank] > RANK_ORDER[rank]) rank = pick.rank;
+
+    selected.push({
+      name: pick.name,
+      type: type,
+      typeLabel: TALENT_POOL[type].name,
+      rank: rank,
+      rankLabel: RANK_LABEL[rank]
+    });
+  }
+  return selected;
+}
+
+function renderTalents() {
+  var container = document.getElementById('previewTalents');
+  if (STATE.talentMode === 'none' || STATE.talents.length === 0) {
+    container.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem">无天赋</span>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < STATE.talents.length; i++) {
+    var t = STATE.talents[i];
+    html += '<div class="talent-badge ' + t.rank + '"><span class="tb-name">' + t.name + '</span> <span class="tb-type">[' + t.typeLabel + ']</span> <span class="tb-rank">◆ ' + t.rankLabel + '</span></div>';
+  }
+  container.innerHTML = html;
+}
+
+function regenerateTalents() {
+  STATE.talents = createRandomTalents(Math.floor(Math.random() * 2) + 1); // 1~3 talents
+  renderTalents();
+}
+
+function setTalentMode(mode) {
+  STATE.talentMode = mode;
+  document.querySelectorAll('.talent-btn[data-talent-mode]').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-talent-mode') === mode);
+  });
+  if (mode === 'none') {
+    STATE.talents = [];
+    renderTalents();
+  } else if (mode === 'auto') {
+    STATE.talents = createRandomTalents(2);
+    renderTalents();
+  } else if (mode === 'manual') {
+    STATE.talents = createRandomTalents(2);
+    renderTalents();
+  }
+}
+
+function generateEquipment() {
+  var equipment = [];
+
+  // Determine primary style from highest attr
+  var maxAttrIdx = 0;
+  for (var i = 1; i < 6; i++) {
+    if (STATE.attrs[i] > STATE.attrs[maxAttrIdx]) maxAttrIdx = i;
+  }
+
+  // Always include some survival gear
+  var survivalGear = getRandomItems(EQUIPMENT_POOL.survival, 1);
+  equipment = equipment.concat(survivalGear);
+
+  // Combat gear based on highest attr
+  if (maxAttrIdx <= 2) {
+    // Physical type
+    var combatGear = getRandomItems(EQUIPMENT_POOL.combat, 1);
+    var defGear = getRandomItems(EQUIPMENT_POOL.defense, 1);
+    equipment = equipment.concat(combatGear).concat(defGear);
+  } else {
+    // Mental type
+    var techGear = getRandomItems(EQUIPMENT_POOL.tech, 1);
+    var utilGear = getRandomItems(EQUIPMENT_POOL.utility, 1);
+    equipment = equipment.concat(techGear).concat(utilGear);
+  }
+
+  // Background influences
+  var bg = (STATE.background || '').toLowerCase();
+  if (bg.includes('军人') || bg.includes('兵') || bg.includes('战士') || bg.includes('战斗')) {
+    var extraCombat = getRandomItems(EQUIPMENT_POOL.combat, 1);
+    equipment = equipment.concat(extraCombat);
+  }
+  if (bg.includes('医生') || bg.includes('医') || bg.includes('治疗')) {
+    equipment.push({ name: '医疗手套', rank: 'common' });
+  }
+  if (bg.includes('学者') || bg.includes('研究') || bg.includes('科学') || bg.includes('学生')) {
+    equipment.push({ name: '便携终端', rank: 'common' });
+  }
+  if (bg.includes('警察') || bg.includes('侦探') || bg.includes('调查')) {
+    equipment.push({ name: '警用配枪', rank: 'rare' });
+  }
+
+  // Deduplicate by name
+  var seen = {};
+  STATE.equipment = equipment.filter(function(e) {
+    if (seen[e.name]) return false;
+    seen[e.name] = true;
+    return true;
+  });
+
+  // Limit to 3-5 items
+  if (STATE.equipment.length > 5) STATE.equipment = STATE.equipment.slice(0, 5);
+
+  renderEquipment();
+}
+
+function getRandomItems(pool, count) {
+  var shuffled = pool.slice().sort(function() { return Math.random() - 0.5; });
+  return shuffled.slice(0, Math.min(count, shuffled.length));
+}
+
+function renderEquipment() {
+  var container = document.getElementById('previewEquip');
+  if (STATE.equipment.length === 0) {
+    container.innerHTML = '<span style="color:var(--text-dim);font-size:0.78rem">无初始装备</span>';
+    return;
+  }
+  var rankLabel = { common: '凡品', rare: '良品', epic: '极品', legendary: '传说' };
+  var html = '';
+  for (var i = 0; i < STATE.equipment.length; i++) {
+    var e = STATE.equipment[i];
+    html += '<div class="equip-badge"><span class="eq-name">' + e.name + '</span> <span class="eq-rank">(' + (rankLabel[e.rank] || e.rank) + ')</span></div>';
+  }
+  container.innerHTML = html;
+}
+
+/* ============================================================
+   步骤5: 确认
+   ============================================================ */
+function generateConfirm() {
+  var lines = [];
+  lines.push('<div class="cc-line"><span class="ccl-label">姓名</span><span class="ccl-value">' + (STATE.name || '—') + '</span></div>');
+  lines.push('<div class="cc-line"><span class="ccl-label">性别</span><span class="ccl-value">' + (STATE.gender || '—') + '</span></div>');
+  lines.push('<div class="cc-line"><span class="ccl-label">性格</span><span class="ccl-value">' + (STATE.personality || '未填写') + '</span></div>');
+  lines.push('<div class="cc-line"><span class="ccl-label">外貌</span><span class="ccl-value">' + (STATE.appearance || '未填写') + '</span></div>');
+  lines.push('<div class="cc-line"><span class="ccl-label">背景</span><span class="ccl-value">' + (STATE.background || '未填写') + '</span></div>');
+
+  // Attrs
+  var attrStr = '';
+  for (var i = 0; i < 6; i++) {
+    attrStr += STATE.attrNames[i] + STATE.attrs[i] + ' ';
+  }
+  lines.push('<div class="cc-line"><span class="ccl-label">属性</span><span class="ccl-value">' + attrStr.trim() + '</span></div>');
+
+  // Skills
+  var skillItems = document.querySelectorAll('#skillGrid .skill-item');
+  var skillStr = '';
+  for (var i = 0; i < skillItems.length; i++) {
+    var sn = skillItems[i].querySelector('.skill-name-input').value.trim();
+    var st = skillItems[i].querySelector('.skill-type-select').value;
+    var sp = skillItems[i].querySelector('input[type="range"]').value;
+    if (sn) skillStr += sn + '(' + st + ',' + sp + ') ';
+  }
+  lines.push('<div class="cc-line"><span class="ccl-label">技能</span><span class="ccl-value">' + (skillStr.trim() || '无') + '</span></div>');
+
+  // Talents
+  var talentStr = '';
+  for (var i = 0; i < STATE.talents.length; i++) {
+    var t = STATE.talents[i];
+    talentStr += t.name + '(' + t.typeLabel + ',' + t.rankLabel + ') ';
+  }
+  lines.push('<div class="cc-line"><span class="ccl-label">天赋</span><span class="ccl-value">' + (talentStr.trim() || '无') + '</span></div>');
+
+  // Equipment
+  var rankLabel = { common: '凡品', rare: '良品', epic: '极品', legendary: '传说' };
+  var equipStr = '';
+  for (var i = 0; i < STATE.equipment.length; i++) {
+    var e = STATE.equipment[i];
+    equipStr += e.name + '(' + (rankLabel[e.rank] || e.rank) + ') ';
+  }
+  lines.push('<div class="cc-line"><span class="ccl-label">装备</span><span class="ccl-value">' + (equipStr.trim() || '无') + '</span></div>');
+
+  lines.push('<div class="cc-line"><span class="ccl-label">补充</span><span class="ccl-value">' + (document.getElementById('previewExtra').value.trim() || '无') + '</span></div>');
+
+  document.getElementById('confirmContent').innerHTML = lines.join('');
+}
+
+/* ============================================================
+   确认导入
+   ============================================================ */
+function confirmImport() {
+  // Build message
+  var msg = '【适格者设定】\n';
+  msg += '姓名：' + STATE.name + '\n';
+  msg += '性别：' + STATE.gender + '\n';
+  msg += '性格：' + (STATE.personality || '未填写') + '\n';
+  msg += '外貌：' + (STATE.appearance || '未填写') + '\n';
+  msg += '背景故事：' + (STATE.background || '未填写') + '\n';
+
+  // Attrs
+  var attrStr = '';
+  for (var i = 0; i < 6; i++) {
+    attrStr += STATE.attrNames[i] + STATE.attrs[i] + ' ';
+  }
+  msg += '属性：' + attrStr.trim() + '\n';
+
+  // Skills
+  var skillItems = document.querySelectorAll('#skillGrid .skill-item');
+  var skillStr = '';
+  for (var i = 0; i < skillItems.length; i++) {
+    var sn = skillItems[i].querySelector('.skill-name-input').value.trim();
+    var st = skillItems[i].querySelector('.skill-type-select').value;
+    var sp = skillItems[i].querySelector('input[type="range"]').value;
+    if (sn) skillStr += sn + '(' + st + ',' + sp + ') ';
+  }
+  msg += '技能：' + (skillStr.trim() || '无') + '\n';
+
+  // Talents
+  var talentStr = '';
+  for (var i = 0; i < STATE.talents.length; i++) {
+    var t = STATE.talents[i];
+    talentStr += t.name + '(' + t.typeLabel + ',' + t.rankLabel + ') ';
+  }
+  msg += '天赋：' + (talentStr.trim() || '无') + '\n';
+
+  // Equipment
+  var rankLabel = { common: '凡品', rare: '良品', epic: '极品', legendary: '传说' };
+  var equipStr = '';
+  for (var i = 0; i < STATE.equipment.length; i++) {
+    var e = STATE.equipment[i];
+    equipStr += e.name + '(' + (rankLabel[e.rank] || e.rank) + ') ';
+  }
+  msg += '初始装备：' + (equipStr.trim() || '无') + '\n';
+
+  // Extra
+  var extra = document.getElementById('previewExtra').value.trim();
+  if (extra) {
+    msg += '补充说明：' + extra + '\n';
+  }
+
+  msg += '锚点空间：主神空间\n';
+  msg += '模式：单人冒险\n';
+  msg += '系统开关：积分系统:开 骰子判定:详细 任务系统:开\n';
+  msg += '【设定结束】请根据以上设定生成开场白。';
+
+  // Attempt to submit to SillyTavern
+  try {
+    var pw = window.parent && window.parent !== window ? window.parent : window;
+    var doc = pw.document;
+
+    // Try triggerSlash first
+    if (typeof pw.triggerSlash === 'function') {
+      pw.triggerSlash('/send ' + msg);
+      showToast('角色档案已发送至主神空间！', 'success');
+      return;
+    }
+
+    // Fallback: set textarea and click send
+    var ta = doc.querySelector('#send_textarea');
+    if (ta) {
+      var proto = Object.getPrototypeOf(ta);
+      var desc = Object.getOwnPropertyDescriptor(proto, 'value');
+      if (desc && desc.set) {
+        desc.set.call(ta, msg);
+      } else {
+        ta.value = msg;
+      }
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+
+      setTimeout(function() {
+        var sb = doc.querySelector('#send_button');
+        if (sb) sb.click();
+      }, 80);
+
+      showToast('角色档案已发送至主神空间！', 'success');
+    } else {
+      // Fallback for testing outside SillyTavern
+      showToast('消息已生成（请在酒馆环境中使用）', 'warning');
+      console.log(msg);
+    }
+  } catch (e) {
+    showToast('消息已生成：可在控制台查看', 'warning');
+    console.log('=== 角色档案消息 ===');
+    console.log(msg);
+    console.log('=====================');
+  }
+}
+
+/* ============================================================
+   键盘支持
+   ============================================================ */
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    if (STATE.currentStep === STATE.totalSteps) {
+      confirmImport();
+    } else {
+      nextStep();
+    }
+  }
+});
+
+/* ============================================================
+   初始化
+   ============================================================ */
+(function init() {
+  // Set initial preset for attrs
+  selectAttrPreset('agility');
+  // Set initial preset for skills
+  selectSkillPreset('agility');
+  // Initial render
+  renderStep();
+  // Sync attr display
+  syncAttrSlidersFromState();
+})();
+</script>
+</body>
+</html>
