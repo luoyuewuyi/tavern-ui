@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>忍务记录 - MVU状态栏</title>
+<style>
+/* ============ CSS Variables ============ */
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121f;
+  --bg-card: rgba(26, 26, 46, 0.88);
+  --bg-card-hover: rgba(34, 34, 56, 0.95);
+  --orange: #ff6b35;
+  --orange-dark: #e55a2b;
+  --red-fire: #ff3838;
+  --gold: #ffd700;
+  --gold-dark: #c8a832;
+  --blue-light: #4fc3f7;
+  --green-leaf: #7cb342;
+  --text-primary: #e8e0d0;
+  --text-secondary: #a09888;
+  --text-muted: #706860;
+  --border-color: rgba(255, 107, 53, 0.25);
+  --border-strong: rgba(255, 107, 53, 0.45);
+  --shadow-glow: rgba(255, 107, 53, 0.15);
+  --scroll-rod-top: linear-gradient(90deg, #3a2510, #8b6914, #d4a843, #8b6914, #3a2510);
+  --scroll-rod-bottom: linear-gradient(90deg, #3a2510, #8b6914, #d4a843, #8b6914, #3a2510);
+  --font-cn: 'Noto Serif SC', 'Source Han Serif SC', 'STSong', 'SimSun', 'Times New Roman', serif;
+  --font-mono: 'Courier New', Courier, monospace;
+}
+
+/* ============ Reset & Base ============ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 107, 53, 0.3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 107, 53, 0.5); }
+
+html { font-size: 14px; }
+
+body {
+  font-family: var(--font-cn);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow: hidden;
+  min-height: 100vh;
+}
+
+/* ============ Scroll Wrapper ============ */
+.scroll-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 107, 53, 0.07) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(255, 56, 56, 0.04) 0%, transparent 45%),
+    linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-primary) 100%);
+}
+
+/* Scroll rods */
+.scroll-rod {
+  flex-shrink: 0;
+  height: 7px;
+  position: relative;
+  z-index: 5;
+}
+.scroll-rod.top {
+  background: var(--scroll-rod-top);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.7), inset 0 1px 2px rgba(212,168,67,0.3);
+}
+.scroll-rod.bottom {
+  background: var(--scroll-rod-bottom);
+  box-shadow: 0 -3px 12px rgba(0,0,0,0.7), inset 0 -1px 2px rgba(212,168,67,0.3);
+}
+
+/* Scroll rod end caps */
+.scroll-rod::before,
+.scroll-rod::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  width: 14px;
+  height: 19px;
+  background: radial-gradient(ellipse at center, #5a3e1b, #2a1a0a);
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+.scroll-rod::before { left: 8px; }
+.scroll-rod::after { right: 8px; }
+
+/* ============ App Container ============ */
+#app {
+  flex: 1;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px 16px 20px;
+  min-height: 600px;
+}
+
+/* ============ Top Info Bar ============ */
+#top-bar {
+  background: linear-gradient(180deg, rgba(26,26,46,0.9), rgba(20,20,36,0.85));
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 2px;
+  position: relative;
+  overflow: hidden;
+}
+#top-bar::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--orange), var(--red-fire), var(--orange), transparent);
+}
+
+.top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.location-display {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--gold);
+  text-shadow: 0 0 8px rgba(255,215,0,0.15);
+}
+.location-display .loc-sep {
+  color: var(--orange);
+  margin: 0 2px;
+}
+.time-display {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--blue-light);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.env-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  border-left: 3px solid var(--blue-light);
+  padding-left: 10px;
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+.scene-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.scene-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  overflow-x: auto;
+  max-width: 65%;
+}
+.scene-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  font-size: 0.7rem;
+  border-radius: 20px;
+  background: rgba(255,107,53,0.12);
+  border: 1px solid rgba(255,107,53,0.2);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  cursor: default;
+}
+.scene-tag.active {
+  background: rgba(79,195,247,0.12);
+  border-color: rgba(79,195,247,0.3);
+  color: var(--blue-light);
+}
+.story-progress {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: right;
+  line-height: 1.4;
+}
+.story-progress .sp-label { color: var(--gold-dark); }
+.story-progress .sp-val { color: var(--text-secondary); }
+
+/* ============ Top Separator ============ */
+.top-sep {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--orange), var(--red-fire), var(--orange), transparent);
+  margin: 10px 0 6px;
+}
+
+/* ============ Tab Navigation ============ */
+.tab-nav {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 10px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+  padding: 3px;
+  border: 1px solid rgba(255,107,53,0.12);
+}
+.tab-btn {
+  flex: 1;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-cn);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  white-space: nowrap;
+}
+.tab-btn:hover {
+  color: var(--text-secondary);
+  background: rgba(255,107,53,0.06);
+}
+.tab-btn.active {
+  color: var(--gold);
+  background: rgba(255,107,53,0.12);
+  box-shadow: inset 0 -2px 0 var(--orange), 0 0 12px rgba(255,107,53,0.08);
+  font-weight: 600;
+}
+
+/* ============ Tab Content ============ */
+.tab-content {
+  display: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.tab-content.active {
+  display: block;
+  opacity: 1;
+}
+
+/* ============ Section Title ============ */
+.section-title {
+  font-size: 0.85rem;
+  color: var(--gold);
+  margin: 12px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255,215,0,0.12);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title .st-icon {
+  font-size: 0.9rem;
+}
+
+/* ============ Card Grid ============ */
+.card-grid {
+  display: grid;
+  gap: 8px;
+}
+.card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.card-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.card-grid.cols-auto { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+
+/* ============ Card Base ============ */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 12px;
+  transition: all 0.25s ease;
+  cursor: default;
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--orange), var(--red-fire));
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255,107,53,0.12);
+  border-color: var(--border-strong);
+  background: var(--bg-card-hover);
+}
+.card:hover::before { opacity: 1; }
+.card.clickable { cursor: pointer; }
+
+.card-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.card-value {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+/* ============ Info Grid (Profile basic) ============ */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 6px;
+}
+.info-cell {
+  background: var(--bg-card);
+  border: 1px solid rgba(255,107,53,0.1);
+  border-radius: 6px;
+  padding: 6px 10px;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+.info-cell:hover { border-color: rgba(255,107,53,0.3); }
+.info-cell .ic-label {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.info-cell .ic-value {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* ============ Ninja Info Card ============ */
+.ninja-info-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 8px 0;
+}
+.ninja-info-card .nic-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.ninja-info-card .nic-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.ninja-info-card .nic-value {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.rank-tag {
+  display: inline-block;
+  padding: 1px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gold);
+  background: rgba(255,215,0,0.1);
+  border: 1px solid rgba(255,215,0,0.2);
+}
+
+/* Progress Bar */
+.progress-wrap {
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 4px 0;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--orange), var(--red-fire));
+  border-radius: 3px;
+  transition: width 0.6s ease;
+  width: 0%;
+}
+
+/* ============ Chakra Tag ============ */
+.chakra-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  margin: 1px 2px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-secondary);
+}
+
+/* ============ Skill/Item Card ============ */
+.skill-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.skill-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255,107,53,0.12);
+  border-color: var(--border-strong);
+}
+.skill-card .sc-name {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+.skill-card .sc-type {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+}
+.skill-card .sc-proficiency {
+  font-size: 0.65rem;
+  color: var(--orange);
+  margin-top: 2px;
+}
+.skill-card.special .sc-name { color: #ce93d8; }
+.skill-card.special { border-color: rgba(206,147,216,0.2); }
+.skill-card.special:hover { border-color: rgba(206,147,216,0.4); }
+.skill-card.special:hover { box-shadow: 0 4px 16px rgba(206,147,216,0.1); }
+
+/* ============ Character Card (Sister) ============ */
+.char-hero {
+  background: linear-gradient(135deg, rgba(26,26,46,0.95), rgba(40,20,30,0.9));
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.char-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -30px; right: -20px;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(255,56,56,0.06), transparent 70%);
+  pointer-events: none;
+}
+.char-hero-name {
+  font-size: 1.4rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--red-fire), var(--blue-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 4px;
+}
+.char-hero-title {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.char-attrs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 6px;
+}
+.char-attr {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,107,53,0.08);
+  border-radius: 6px;
+  padding: 5px 10px;
+}
+.char-attr .ca-label {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.char-attr .ca-value {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Sharingan Visual */
+.sharingan-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.sharingan-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #ff1744;
+  box-shadow: 0 0 6px rgba(255,23,68,0.8), 0 0 12px rgba(255,23,68,0.4);
+  animation: sharinganPulse 2s ease-in-out infinite;
+}
+@keyframes sharinganPulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(255,23,68,0.8), 0 0 12px rgba(255,23,68,0.4); }
+  50% { box-shadow: 0 0 10px rgba(255,23,68,1), 0 0 20px rgba(255,23,68,0.6); }
+}
+.sharingan-triple {
+  display: inline-grid;
+  grid-template-columns: repeat(2, 12px);
+  gap: 2px;
+  align-items: center;
+}
+.sharingan-triple .sd-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #ff1744;
+  box-shadow: 0 0 6px #ff1744;
+  animation: sharinganPulse 2s ease-in-out infinite;
+}
+.sharingan-triple .sd-dot:nth-child(1) { grid-column: 1; grid-row: 1; }
+.sharingan-triple .sd-dot:nth-child(3) { grid-column: 2; grid-row: 1; }
+.sharingan-triple .sd-dot:nth-child(2) { grid-column: 1 / 3; grid-row: 2; justify-self: center; }
+.sharingan-mangekyo {
+  font-size: 1.1rem;
+  color: #ff1744;
+  animation: mangekyoSpin 3s linear infinite;
+  display: inline-block;
+}
+@keyframes mangekyoSpin {
+  0% { transform: rotate(0deg); filter: drop-shadow(0 0 4px #ff1744); }
+  50% { filter: drop-shadow(0 0 10px #ff1744) drop-shadow(0 0 20px rgba(255,23,68,0.4)); }
+  100% { transform: rotate(360deg); filter: drop-shadow(0 0 4px #ff1744); }
+}
+.sharingan-eternal {
+  font-size: 1.1rem;
+  color: #e040fb;
+  animation: eternalGlow 2s ease-in-out infinite;
+  display: inline-block;
+}
+@keyframes eternalGlow {
+  0%, 100% { filter: drop-shadow(0 0 4px #e040fb) drop-shadow(0 0 8px rgba(224,64,251,0.4)); }
+  50% { filter: drop-shadow(0 0 10px #e040fb) drop-shadow(0 0 20px rgba(224,64,251,0.6)); }
+}
+.sharingan-rinnegan {
+  display: inline-block;
+  font-size: 1rem;
+  animation: rinneganRotate 4s linear infinite;
+}
+@keyframes rinneganRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Affection Display */
+.affection-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.affection-value {
+  font-size: 1rem;
+  font-weight: 700;
+}
+.affection-label {
+  font-size: 0.7rem;
+  padding: 1px 8px;
+  border-radius: 20px;
+  background: rgba(255,64,129,0.1);
+  border: 1px solid rgba(255,64,129,0.2);
+}
+.affection-glow {
+  text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+}
+
+/* Confidential Tag */
+.confidential-tag {
+  display: inline-block;
+  padding: 1px 8px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #ff1744;
+  background: rgba(255,23,68,0.1);
+  border: 1px solid rgba(255,23,68,0.3);
+  border-radius: 4px;
+  letter-spacing: 1px;
+  animation: confidentialBlink 1.5s ease-in-out infinite;
+}
+@keyframes confidentialBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ============ NPC Gallery ============ */
+.npc-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.npc-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255,107,53,0.12);
+}
+.npc-card.male { border-left: 3px solid rgba(100,120,140,0.4); }
+.npc-card.female { border-left: 3px solid rgba(200,100,180,0.4); }
+.npc-card .npc-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.npc-card .npc-meta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ============ Modal ============ */
+#modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+#modal-overlay.open {
+  display: flex;
+}
+#modal-box {
+  background: linear-gradient(180deg, #1a1a2e, #141428);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 0;
+  animation: modalIn 0.3s ease;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 30px rgba(255,107,53,0.06);
+}
+@keyframes modalIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+#modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255,107,53,0.12);
+  position: sticky;
+  top: 0;
+  background: rgba(26,26,46,0.98);
+  z-index: 2;
+  border-radius: 12px 12px 0 0;
+}
+#modal-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--gold);
+}
+#modal-close {
+  width: 28px; height: 28px;
+  border: none;
+  background: rgba(255,255,255,0.05);
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+#modal-close:hover {
+  background: rgba(255,23,68,0.15);
+  color: #ff1744;
+}
+#modal-body {
+  padding: 14px 18px 18px;
+}
+
+/* Modal Inner Styles */
+.modal-field {
+  margin-bottom: 8px;
+}
+.modal-field .mf-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 1px;
+}
+.modal-field .mf-value {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+.modal-divider {
+  border: none;
+  border-top: 1px solid rgba(255,107,53,0.08);
+  margin: 10px 0;
+}
+
+/* Red Chamber Modal */
+.red-chamber-section {
+  margin-bottom: 14px;
+}
+.rcs-title {
+  font-size: 0.8rem;
+  color: #e040fb;
+  margin-bottom: 6px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid rgba(224,64,251,0.15);
+}
+.rcs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 6px;
+}
+.rcs-item {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(224,64,251,0.1);
+  border-radius: 6px;
+  padding: 6px 8px;
+  text-align: center;
+}
+.rcs-item .ri-label {
+  font-size: 0.65rem;
+  color: #ce93d8;
+}
+.rcs-item .ri-value {
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  margin-top: 1px;
+}
+
+/* ============ Loading & Empty ============ */
+.loading-state {
+  text-align: center;
+  padding: 30px 20px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.loading-state .ls-spinner {
+  width: 28px; height: 28px;
+  margin: 0 auto 10px;
+  border: 2px solid rgba(255,107,53,0.1);
+  border-top-color: var(--orange);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty-state {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+/* ============ CSS Decorative Fire ============ */
+.flame-glow {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, var(--orange), var(--red-fire), transparent);
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ============ Responsive ============ */
+@media (max-width: 480px) {
+  html { font-size: 13px; }
+  #app { padding: 8px 10px 14px; }
+  .card-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+  .card-grid.cols-3 { grid-template-columns: repeat(2, 1fr); }
+  .card-grid.cols-2 { grid-template-columns: 1fr; }
+  .info-grid { grid-template-columns: repeat(2, 1fr); }
+  .char-hero-name { font-size: 1.15rem; }
+  .top-row { flex-direction: column; align-items: flex-start; }
+  .scene-tags { max-width: 100%; }
+}
+@media (max-width: 360px) {
+  html { font-size: 12px; }
+  .tab-btn { font-size: 0.72rem; padding: 5px 6px; }
+  .char-attrs { grid-template-columns: repeat(2, 1fr); }
+  .rcs-grid { grid-template-columns: repeat(2, 1fr); }
+  #modal-box { max-width: 98%; }
+}
+@media (min-width: 768px) {
+  .card-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="scroll-wrapper">
+  <div class="scroll-rod top"></div>
+
+  <div id="app">
+    <!-- Top Info Bar -->
+    <div id="top-bar">
+      <div class="loading-state" id="loading-init">
+        <div class="ls-spinner"></div>
+        <div>正在加载忍者档案...</div>
+      </div>
+      <div id="top-content" style="display:none;">
+        <div class="top-row">
+          <div class="location-display" id="loc-display">—</div>
+          <div class="time-display" id="time-display">—</div>
+        </div>
+        <div class="env-desc" id="env-desc">—</div>
+        <div class="scene-row">
+          <div class="scene-tags" id="scene-tags"></div>
+          <div class="story-progress" id="story-progress"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="top-sep"></div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+      <button class="tab-btn active" data-tab="profile">我的档案</button>
+      <button class="tab-btn" data-tab="sister">姐姐·夜雪凝</button>
+      <button class="tab-btn" data-tab="gallery">忍者图鉴</button>
+    </div>
+
+    <!-- Tab: 我的档案 -->
+    <div class="tab-content active" id="tab-profile">
+      <div class="loading-state" id="load-profile">
+        <div class="ls-spinner"></div>
+        <div>加载个人信息...</div>
+      </div>
+      <div id="profile-content" style="display:none;"></div>
+    </div>
+
+    <!-- Tab: 姐姐·夜雪凝 -->
+    <div class="tab-content" id="tab-sister">
+      <div class="loading-state" id="load-sister">
+        <div class="ls-spinner"></div>
+        <div>加载姐姐档案...</div>
+      </div>
+      <div id="sister-content" style="display:none;"></div>
+    </div>
+
+    <!-- Tab: 忍者图鉴 -->
+    <div class="tab-content" id="tab-gallery">
+      <div class="loading-state" id="load-gallery">
+        <div class="ls-spinner"></div>
+        <div>加载忍者图鉴...</div>
+      </div>
+      <div id="gallery-content" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div class="scroll-rod bottom"></div>
+</div>
+
+<!-- Modal Overlay -->
+<div id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div id="modal-box">
+    <div id="modal-header">
+      <span id="modal-title">详情</span>
+      <button id="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- Flame glow decoration -->
+<div class="flame-glow"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ========== Constants ========== */
+  var RANK_MAP = { 1: '下忍', 2: '中忍', 3: '上忍', 4: '精英上忍', 5: '三忍', 6: '影', 7: '超影', 8: '六道仙人' };
+
+  var CHAKRA_COLORS = {
+    '风': '#7cb342',
+    '雷': '#ffd54f',
+    '水': '#4fc3f7',
+    '火': '#ff6b35',
+    '土': '#a1887f',
+    '阴': '#9c27b0',
+    '阳': '#f5f5f5'
+  };
+
+  var FIELD_LABELS = {
+    '当前关系': '关系',
+    '好感度': '好感度',
+    '忍者头衔': '头衔',
+    '忍者等级': '等级',
+    '当前进度': '进度',
+    '查克拉属性': '查克拉属性',
+    '血继限界': '血继限界',
+    '写轮眼状态': '写轮眼',
+    '仙人模式': '仙人模式',
+    '通灵兽': '通灵兽',
+    '类型': '类型',
+    '熟练度': '熟练度',
+    '技能效果': '效果',
+    '消耗与限制': '消耗'
+  };
+
+  var RED_CHAMBER_SECTIONS = ['基础档案', '私密外观', '调教与开发', '纯洁度与经历', '生育与怀孕'];
+
+  var BODY_PARTS = [
+    { key: '青丝', label: '青丝', desc: '发丝' },
+    { key: '雪肌', label: '雪肌', desc: '肌肤' },
+    { key: '玉臂', label: '玉臂', desc: '手臂' },
+    { key: '香肩', label: '香肩', desc: '肩部' },
+    { key: '酥胸', label: '酥胸', desc: '胸部' },
+    { key: '柳腰', label: '柳腰', desc: '腰部' },
+    { key: '修长美腿', label: '美腿', desc: '腿部' },
+    { key: '玉足', label: '玉足', desc: '足部' }
+  ];
+
+  var currentData = null;
+
+  /* ========== Helper: safe get ========== */
+  function safeGet(obj, path, fallback) {
+    if (typeof fallback === 'undefined') fallback = '';
+    try {
+      if (typeof _ !== 'undefined' && _.get) {
+        return _.get(obj, path, fallback);
+      }
+      var parts = path.split('.');
+      var cur = obj;
+      for (var i = 0; i < parts.length; i++) {
+        if (cur == null || typeof cur !== 'object') return fallback;
+        cur = cur[parts[i]];
+      }
+      return (cur === undefined || cur === null) ? fallback : cur;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  /* ========== Helper: extract year from 火历XX年 ========== */
+  function extractYear(dateStr) {
+    try {
+      if (!dateStr) return null;
+      var m = String(dateStr).match(/(\d+)/);
+      return m ? parseInt(m[1], 10) : null;
+    } catch (e) { return null; }
+  }
+
+  /* ========== Helper: calculate age ========== */
+  function calcAge(currentTimeStr, birthdayStr) {
+    try {
+      var curYear = extractYear(currentTimeStr);
+      var birthYear = extractYear(birthdayStr);
+      if (curYear != null && birthYear != null) {
+        return Math.max(0, curYear - birthYear);
+      }
+      return null;
+    } catch (e) { return null; }
+  }
+
+  /* ========== Helper: get rank from level ========== */
+  function getRank(level) {
+    try {
+      if (level == null) return '未知';
+      var lvl = typeof level === 'string' ? parseInt(level, 10) : level;
+      return RANK_MAP[lvl] || '未知';
+    } catch (e) { return '未知'; }
+  }
+
+  /* ========== Helper: affection color ========== */
+  function getAffectionColor(value) {
+    var v = Number(value);
+    if (isNaN(v)) return '#9e9e9e';
+    if (v < 0) return '#ff1744';
+    if (v <= 30) return '#9e9e9e';
+    if (v <= 50) return '#42a5f5';
+    if (v <= 70) return '#26c6da';
+    if (v <= 90) return '#ffa726';
+    return '#ff4081';
+  }
+
+  function getAffectionLabel(value) {
+    var v = Number(value);
+    if (isNaN(v)) return '';
+    if (v < 0) return '仇恨';
+    if (v <= 30) return '冷淡';
+    if (v <= 50) return '一般';
+    if (v <= 70) return '友好';
+    if (v <= 90) return '信赖';
+    return '姐弟情深';
+  }
+
+  /* ========== Helper: render sharingan ========== */
+  function renderSharingan(state) {
+    try {
+      if (!state || state === '无') return '<span style="color:#706860;font-size:0.75rem;">无</span>';
+      var s = String(state).trim();
+      if (s.indexOf('单勾玉') !== -1 || s === '单勾玉' || s === '1') {
+        return '<span class="sharingan-display"><span class="sharingan-dot"></span></span>';
+      }
+      if (s.indexOf('双勾玉') !== -1 || s === '双勾玉' || s === '2') {
+        return '<span class="sharingan-display"><span class="sharingan-dot"></span><span class="sharingan-dot"></span></span>';
+      }
+      if (s.indexOf('三勾玉') !== -1 || s === '三勾玉' || s === '3') {
+        return '<span class="sharingan-triple"><span class="sd-dot"></span><span class="sd-dot"></span><span class="sd-dot"></span></span>';
+      }
+      if (s.indexOf('永恒万花筒') !== -1) {
+        return '<span class="sharingan-eternal">❀</span>';
+      }
+      if (s.indexOf('万花筒') !== -1) {
+        return '<span class="sharingan-mangekyo">❀</span>';
+      }
+      if (s.indexOf('轮回眼') !== -1 || s.indexOf('轮回') !== -1) {
+        return '<span class="sharingan-rinnegan" style="color:#ce93d8;font-size:1.1rem;">◎</span>';
+      }
+      return '<span style="color:#706860;font-size:0.75rem;">' + escapeHtml(s) + '</span>';
+    } catch (e) { return '<span style="color:#706860;">—</span>'; }
+  }
+
+  /* ========== Helper: chakra element tag ========== */
+  function renderChakraTag(element) {
+    try {
+      if (!element) return '';
+      var parts = String(element).split(/[,，、]/).map(function(s) { return s.trim(); }).filter(Boolean);
+      return parts.map(function(p) {
+        var color = CHAKRA_COLORS[p] || '#888';
+        return '<span class="chakra-tag" style="border-color:' + color + '44;color:' + color + ';">' + escapeHtml(p) + '</span>';
+      }).join('');
+    } catch (e) { return ''; }
+  }
+
+  /* ========== Helper: render affection display ========== */
+  function renderAffection(value, labelOverride) {
+    try {
+      var v = Number(value);
+      var color = getAffectionColor(v);
+      var label = labelOverride || getAffectionLabel(v);
+      var isGlow = v > 90;
+      var cls = isGlow ? 'affection-display affection-glow' : 'affection-display';
+      return '<span class="' + cls + '" style="color:' + color + ';">' +
+        '<span class="affection-value">' + (isNaN(v) ? '—' : v + '/100') + '</span>' +
+        '<span class="affection-label" style="border-color:' + color + '44;background:' + color + '11;">' + escapeHtml(label) + '</span>' +
+        '</span>';
+    } catch (e) { return '<span>—</span>'; }
+  }
+
+  /* ========== Helper: escape HTML ========== */
+  function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  /* ========== Helper: friendly field label ========== */
+  function friendlyLabel(key) {
+    return FIELD_LABELS[key] || key;
+  }
+
+  /* ========== Helper: format key-value to display ========== */
+  function kvToDisplay(obj, excludeKeys) {
+    try {
+      if (!obj || typeof obj !== 'object') return [];
+      var ex = excludeKeys || [];
+      return Object.keys(obj).filter(function(k) {
+        return ex.indexOf(k) === -1;
+      }).map(function(k) {
+        return { key: k, label: friendlyLabel(k), value: obj[k] };
+      });
+    } catch (e) { return []; }
+  }
+
+  /* ========== Data Reading ========== */
+  function readLatestStatData() {
+    try {
+      if (window.getVariables) {
+        var cur = window.getVariables({ type: 'message' });
+        if (cur && cur.stat_data) return cur.stat_data;
+      }
+    } catch (e) { /* ignore */ }
+    try {
+      if (window.Mvu && window.Mvu.getMvuData) {
+        var latest = window.Mvu.getMvuData({ type: 'message', message_id: -1 });
+        if (latest && latest.stat_data) return latest.stat_data;
+      }
+    } catch (e) { /* ignore */ }
+    try {
+      if (window.getAllVariables) {
+        var all = window.getAllVariables();
+        if (all && all.stat_data) return all.stat_data;
+      }
+    } catch (e) { /* ignore */ }
+    return null;
+  }
+
+  /* ========== Main Render ========== */
+  function handleDataUpdate() {
+    try {
+      var data = readLatestStatData();
+      if (!data) {
+        if (!currentData) return;
+        return;
+      }
+      currentData = data;
+      renderAll(data);
+    } catch (e) {
+      console.error('MVU Status: render error', e);
+    }
+  }
+
+  function renderAll(data) {
+    try {
+      var loads = document.querySelectorAll('.loading-state');
+      for (var i = 0; i < loads.length; i++) {
+        loads[i].style.display = 'none';
+      }
+      var topContent = document.getElementById('top-content');
+      if (topContent) topContent.style.display = 'block';
+      renderTopBar(data);
+      renderProfileTab(data);
+      renderSisterTab(data);
+      renderGalleryTab(data);
+    } catch (e) {
+      console.error('renderAll error', e);
+    }
+  }
+
+  /* ========== Render: Top Bar ========== */
+  function renderTopBar(data) {
+    try {
+      var world = data['世界'] || {};
+      var timeStr = world['当前时间'] || '—';
+      var loc = world['当前地点'] || {};
+      var env = world['环境描述'] || '';
+      var script = world['当前剧本'] || '';
+      var chapter = world['当前章节'] || '';
+      var node = world['当前节点'] || '';
+      var sceneChars = world['当前场景内角色'] || {};
+
+      var locParts = [
+        loc['大地点'],
+        loc['中地点'],
+        loc['小地点']
+      ].filter(Boolean);
+      var locStr = locParts.length ? locParts.join('<span class="loc-sep"> · </span>') : '—';
+
+      var locEl = document.getElementById('loc-display');
+      if (locEl) locEl.innerHTML = locStr;
+
+      var timeEl = document.getElementById('time-display');
+      if (timeEl) timeEl.textContent = timeStr;
+
+      var envEl = document.getElementById('env-desc');
+      if (envEl) envEl.textContent = env || '—';
+
+      var tagsEl = document.getElementById('scene-tags');
+      if (tagsEl) {
+        var charNames = Object.keys(sceneChars).filter(function(n) { return sceneChars[n]; });
+        if (charNames.length) {
+          tagsEl.innerHTML = charNames.map(function(n) {
+            return '<span class="scene-tag active">' + escapeHtml(n) + '</span>';
+          }).join('');
+        } else {
+          tagsEl.innerHTML = '<span class="scene-tag">无在场角色</span>';
+        }
+      }
+
+      var progEl = document.getElementById('story-progress');
+      if (progEl) {
+        var parts = [];
+        if (script) parts.push('<span class="sp-label">剧本</span> <span class="sp-val">' + escapeHtml(script) + '</span>');
+        if (chapter) parts.push('<span class="sp-label">章节</span> <span class="sp-val">' + escapeHtml(chapter) + '</span>');
+        if (node) parts.push('<span class="sp-label">节点</span> <span class="sp-val">' + escapeHtml(node) + '</span>');
+        progEl.innerHTML = parts.join(' &nbsp;|&nbsp; ') || '—';
+      }
+    } catch (e) {
+      console.error('renderTopBar error', e);
+    }
+  }
+
+  /* ========== Render: Tab 1 - Profile ========== */
+  function renderProfileTab(data) {
+    try {
+      var container = document.getElementById('profile-content');
+      if (!container) return;
+
+      var player = data['玩家'] || {};
+      var basic = player['基础信息'] || {};
+      var ninjaInfo = player['忍者信息'] || {};
+      var ninjutsu = player['忍术列表'] || {};
+      var special = player['特殊技能'] || {};
+      var backpack = player['背包'] || {};
+      var world = data['世界'] || {};
+      var currentTime = world['当前时间'] || '';
+
+      var html = '';
+
+      // Basic Info Grid
+      var birth = basic['生日'] || '';
+      var age = calcAge(currentTime, birth);
+      var ageStr = age != null ? age + '岁' : '—';
+
+      var basicFields = [
+        { label: '姓名', value: basic['姓名'] },
+        { label: '性别', value: basic['性别'] },
+        { label: '年龄', value: ageStr },
+        { label: '身高', value: basic['身高'] },
+        { label: '体重', value: basic['体重'] },
+        { label: '身份', value: basic['身份'] }
+      ];
+
+      html += '<div class="section-title"><span class="st-icon">📋</span> 基础信息</div>';
+      html += '<div class="info-grid">';
+      for (var i = 0; i < basicFields.length; i++) {
+        var f = basicFields[i];
+        html += '<div class="info-cell">' +
+          '<div class="ic-label">' + escapeHtml(f.label) + '</div>' +
+          '<div class="ic-value">' + escapeHtml(f.value || '—') + '</div>' +
+          '</div>';
+      }
+      html += '</div>';
+
+      // Ninja Info Card
+      var rank = safeGet(ninjaInfo, '忍者头衔', '');
+      var level = safeGet(ninjaInfo, '忍者等级', '');
+      var progress = safeGet(ninjaInfo, '当前进度', '');
+      var chakraAttr = safeGet(ninjaInfo, '查克拉属性', '');
+      var chakraAmount = safeGet(ninjaInfo, '查克拉量', '');
+      var anchorTime = safeGet(ninjaInfo, '锚定时间', '');
+
+      html += '<div class="section-title"><span class="st-icon">⚔️</span> 忍者信息</div>';
+      html += '<div class="ninja-info-card">';
+      html += '<div class="nic-row"><span class="nic-label">头衔</span><span class="nic-value">' + escapeHtml(rank) + ' <span class="rank-tag">Lv.' + escapeHtml(String(level)) + '</span></span></div>';
+      html += '<div class="nic-row"><span class="nic-label">进度</span><span class="nic-value">' + escapeHtml(String(progress)) + '%</span></div>';
+      html += '<div class="progress-wrap"><div class="progress-fill" style="width:' + Math.min(100, Math.max(0, Number(progress) || 0)) + '%;"></div></div>';
+      html += '<div class="nic-row"><span class="nic-label">查克拉属性</span><span class="nic-value">' + renderChakraTag(chakraAttr) + '</span></div>';
+      html += '<div class="nic-row"><span class="nic-label">查克拉量</span><span class="nic-value">' + escapeHtml(chakraAmount || '—') + '</span></div>';
+      if (anchorTime) html += '<div class="nic-row"><span class="nic-label">锚定时间</span><span class="nic-value" style="font-family:var(--font-mono);color:var(--blue-light);">' + escapeHtml(anchorTime) + '</span></div>';
+      html += '</div>';
+
+      // Ninjutsu
+      if (Object.keys(ninjutsu).length) {
+        html += '<div class="section-title"><span class="st-icon">🔥</span> 忍术列表</div>';
+        html += '<div class="card-grid cols-auto">';
+        for (var nk in ninjutsu) {
+          if (ninjutsu.hasOwnProperty(nk)) {
+            var nv = ninjutsu[nk] || {};
+            html += '<div class="skill-card clickable" onclick="openNinjutsuDetail(\'' + escapeHtml(nk).replace(/'/g, "\\'") + '\')">' +
+              '<div class="sc-name">' + escapeHtml(nk) + '</div>' +
+              '<div class="sc-type">' + escapeHtml(nv['类型'] || '忍术') + '</div>' +
+              '<div class="sc-proficiency">' + escapeHtml(nv['熟练度'] || '') + '</div>' +
+              '</div>';
+          }
+        }
+        html += '</div>';
+      } else {
+        html += '<div class="empty-state">暂无忍术记录</div>';
+      }
+
+      // Special Skills
+      if (Object.keys(special).length) {
+        html += '<div class="section-title"><span class="st-icon">🧠</span> 特殊技能</div>';
+        html += '<div class="card-grid cols-auto">';
+        for (var sk in special) {
+          if (special.hasOwnProperty(sk)) {
+            var sv = special[sk] || {};
+            html += '<div class="skill-card special clickable" onclick="openSkillDetail(\'' + escapeHtml(sk).replace(/'/g, "\\'") + '\',\'special\')">' +
+              '<div class="sc-name">' + escapeHtml(sk) + '</div>' +
+              '<div class="sc-type">' + escapeHtml(sv['类型'] || '特殊技能') + '</div>' +
+              '<div class="sc-proficiency">' + escapeHtml(sv['熟练度'] || '') + '</div>' +
+              '</div>';
+          }
+        }
+        html += '</div>';
+      }
+
+      // Backpack
+      if (Object.keys(backpack).length) {
+        html += '<div class="section-title"><span class="st-icon">🎒</span> 背包</div>';
+        html += '<div class="card-grid cols-auto">';
+        for (var bk in backpack) {
+          if (backpack.hasOwnProperty(bk)) {
+            var bv = backpack[bk] || {};
+            html += '<div class="skill-card clickable" onclick="openItemDetail(\'' + escapeHtml(bk).replace(/'/g, "\\'") + '\')">' +
+              '<div class="sc-name">' + escapeHtml(bk) + '</div>' +
+              '<div class="sc-type">×' + escapeHtml(String(bv['数量'] != null ? bv['数量'] : 1)) + '</div>' +
+              '</div>';
+          }
+        }
+        html += '</div>';
+      }
+
+      container.innerHTML = html;
+    } catch (e) {
+      console.error('renderProfileTab error', e);
+      var c = document.getElementById('profile-content');
+      if (c) c.innerHTML = '<div class="empty-state">数据加载异常</div>';
+    }
+  }
+
+  /* ========== Render: Tab 2 - Sister ========== */
+  function renderSisterTab(data) {
+    try {
+      var container = document.getElementById('sister-content');
+      if (!container) return;
+
+      var chars = data['角色'] || {};
+      var sister = chars['夜雪凝'];
+      if (!sister) {
+        var keys = Object.keys(chars);
+        for (var i = 0; i < keys.length; i++) {
+          if (keys[i].indexOf('雪凝') !== -1 || keys[i] === '夜雪凝') {
+            sister = chars[keys[i]];
+            break;
+          }
+        }
+      }
+      if (!sister) {
+        container.innerHTML = '<div class="empty-state">未找到「夜雪凝」的角色数据</div>';
+        return;
+      }
+
+      var html = '';
+
+      // Hero Card
+      html += '<div class="char-hero">';
+      html += '<div class="char-hero-name">夜雪凝</div>';
+      html += '<div class="char-hero-title">' + escapeHtml(sister['类型'] || '未知') + ' · ' + escapeHtml(sister['当前关系'] || '') + '</div>';
+
+      // Character attributes
+      html += '<div class="char-attrs">';
+
+      var attrMap = {
+        '忍者头衔': sister['忍者头衔'],
+        '忍者等级': sister['忍者等级'] != null ? 'Lv.' + sister['忍者等级'] : null,
+        '当前进度': sister['当前进度'] != null ? sister['当前进度'] + '%' : null,
+        '查克拉属性': null,
+        '血继限界': sister['血继限界'],
+        '写轮眼状态': null,
+        '仙人模式': sister['仙人模式'],
+        '通灵兽': sister['通灵兽'],
+        '性别': sister['性别']
+      };
+
+      for (var ak in attrMap) {
+        if (attrMap[ak] != null || ak === '查克拉属性' || ak === '写轮眼状态') {
+          html += '<div class="char-attr">' +
+            '<div class="ca-label">' + escapeHtml(friendlyLabel(ak)) + '</div>' +
+            '<div class="ca-value">';
+          if (ak === '查克拉属性') {
+            html += renderChakraTag(sister['查克拉属性'] || '');
+          } else if (ak === '写轮眼状态') {
+            html += renderSharingan(sister['写轮眼状态']);
+          } else if (ak === '仙人模式' && sister['仙人模式']) {
+            html += escapeHtml(sister['仙人模式']) + ' <span class="confidential-tag">最高机密</span>';
+          } else {
+            html += escapeHtml(String(attrMap[ak] || '—'));
+          }
+          html += '</div></div>';
+        }
+      }
+
+      html += '</div>';
+
+      // Affection
+      html += '<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,107,53,0.08);">';
+      html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:2px;">好感度</div>';
+      html += renderAffection(sister['好感度'], sister['好感度'] > 90 ? '姐弟情深' : null);
+      html += '</div>';
+
+      html += '</div>';
+
+      // Ninjutsu
+      var ninjutsu = sister['忍术列表'] || {};
+      if (Object.keys(ninjutsu).length) {
+        html += '<div class="section-title"><span class="st-icon">🔥</span> 忍术列表</div>';
+        html += '<div class="card-grid cols-auto">';
+        for (var nk in ninjutsu) {
+          if (ninjutsu.hasOwnProperty(nk)) {
+            var nv = ninjutsu[nk] || {};
+            html += '<div class="skill-card clickable" onclick="openNinjutsuDetail(\'' + escapeHtml(nk).replace(/'/g, "\\'") + '\')">' +
+              '<div class="sc-name">' + escapeHtml(nk) + '</div>' +
+              '<div class="sc-type">' + escapeHtml(nv['类型'] || '忍术') + '</div>' +
+              '<div class="sc-proficiency">' + escapeHtml(nv['熟练度'] || '') + '</div>' +
+              '</div>';
+          }
+        }
+        html += '</div>';
+      }
+
+      // Red Chamber button
+      var redChamber = sister['红颜'];
+      if (redChamber && typeof redChamber === 'object' && Object.keys(redChamber).length) {
+        html += '<div class="section-title"><span class="st-icon">🌸</span> 红颜档案</div>';
+        html += '<div class="card clickable" onclick="openRedChamber()" style="text-align:center;padding:14px;">' +
+          '<div style="font-size:0.9rem;color:#e040fb;margin-bottom:4px;">🌸 红颜详情</div>' +
+          '<div style="font-size:0.72rem;color:var(--text-muted);">点击查看完整红颜档案</div>' +
+          '</div>';
+      }
+
+      container.innerHTML = html;
+    } catch (e) {
+      console.error('renderSisterTab error', e);
+      var c = document.getElementById('sister-content');
+      if (c) c.innerHTML = '<div class="empty-state">数据加载异常</div>';
+    }
+  }
+
+  /* ========== Render: Tab 3 - Gallery ========== */
+  function renderGalleryTab(data) {
+    try {
+      var container = document.getElementById('gallery-content');
+      if (!container) return;
+
+      var chars = data['角色'] || {};
+      var excludeNames = ['夜雪凝', '夜尽明'];
+      var playerName = safeGet(data, '玩家.基础信息.姓名', '');
+      if (playerName && excludeNames.indexOf(playerName) === -1) excludeNames.push(playerName);
+
+      var npcList = [];
+      var keys = Object.keys(chars);
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        var isExcluded = false;
+        for (var e = 0; e < excludeNames.length; e++) {
+          if (k.indexOf(excludeNames[e]) !== -1) { isExcluded = true; break; }
+        }
+        if (!isExcluded) {
+          npcList.push({ name: k, data: chars[k] });
+        }
+      }
+
+      if (npcList.length === 0 && keys.length > 0) {
+        for (var i2 = 0; i2 < keys.length; i2++) {
+          var k2 = keys[i2];
+          if (k2.indexOf('夜雪凝') === -1 && k2.indexOf('夜尽明') === -1) {
+            npcList.push({ name: k2, data: chars[k2] });
+          }
+        }
+      }
+
+      if (!npcList.length) {
+        container.innerHTML = '<div class="empty-state">暂无其他角色数据</div>';
+        return;
+      }
+
+      var html = '';
+      html += '<div class="section-title"><span class="st-icon">📖</span> 忍者图鉴（' + npcList.length + '人）</div>';
+      html += '<div class="card-grid cols-auto" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));">';
+
+      for (var n = 0; n < npcList.length; n++) {
+        var npc = npcList[n];
+        var nd = npc.data || {};
+        var gender = nd['性别'] || '';
+        var isFemale = gender.indexOf('女') !== -1;
+        var genderClass = isFemale ? 'female' : 'male';
+
+        var rank = nd['忍者头衔'] || '—';
+        var affection = nd['好感度'];
+        var chakra = nd['查克拉属性'] || '';
+        var sharingan = nd['写轮眼状态'] || '';
+
+        html += '<div class="npc-card ' + genderClass + ' clickable" onclick="openNPCDetail(\'' + escapeHtml(npc.name).replace(/'/g, "\\'") + '\')">';
+        html += '<div class="npc-name">' + escapeHtml(npc.name) + '</div>';
+        html += '<div class="npc-meta">' + escapeHtml(rank) + '</div>';
+        if (affection != null) {
+          html += '<div style="margin-top:4px;font-size:0.7rem;">' + renderAffection(affection) + '</div>';
+        }
+        if (chakra) {
+          html += '<div style="margin-top:3px;">' + renderChakraTag(chakra) + '</div>';
+        }
+        if (sharingan && sharingan !== '无') {
+          html += '<div style="margin-top:3px;font-size:0.65rem;color:var(--text-muted);">写轮眼: ' + renderSharingan(sharingan) + '</div>';
+        }
+        html += '</div>';
+      }
+
+      html += '</div>';
+      container.innerHTML = html;
+    } catch (e) {
+      console.error('renderGalleryTab error', e);
+      var c = document.getElementById('gallery-content');
+      if (c) c.innerHTML = '<div class="empty-state">数据加载异常</div>';
+    }
+  }
+
+  /* ========== Tab Switching ========== */
+  function switchTab(tabId) {
+    try {
+      var btns = document.querySelectorAll('.tab-btn');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.remove('active');
+      }
+      var activeBtn = document.querySelector('.tab-btn[data-tab="' + tabId + '"]');
+      if (activeBtn) activeBtn.classList.add('active');
+
+      var contents = document.querySelectorAll('.tab-content');
+      for (var j = 0; j < contents.length; j++) {
+        contents[j].classList.remove('active');
+      }
+      var target = document.getElementById('tab-' + tabId);
+      if (target) target.classList.add('active');
+    } catch (e) {
+      console.error('switchTab error', e);
+    }
+  }
+
+  /* ========== Modal System ========== */
+  function openModal(title, bodyHtml) {
+    try {
+      var overlay = document.getElementById('modal-overlay');
+      var titleEl = document.getElementById('modal-title');
+      var bodyEl = document.getElementById('modal-body');
+      if (!overlay || !titleEl || !bodyEl) return;
+      titleEl.textContent = title || '详情';
+      bodyEl.innerHTML = bodyHtml || '';
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    } catch (e) {
+      console.error('openModal error', e);
+    }
+  }
+
+  function closeModal() {
+    try {
+      var overlay = document.getElementById('modal-overlay');
+      if (overlay) overlay.classList.remove('open');
+      document.body.style.overflow = '';
+    } catch (e) { /* ignore */ }
+  }
+
+  /* ========== Modal: Ninjutsu Detail ========== */
+  window.openNinjutsuDetail = function(name) {
+    try {
+      var data = currentData;
+      if (!data) { openModal('忍术详情', '<div class="empty-state">暂无数据</div>'); return; }
+      var ninjutsu = {};
+      var playerN = safeGet(data, '玩家.忍术列表', {});
+      if (playerN[name]) ninjutsu = playerN[name];
+      if (!ninjutsu || !Object.keys(ninjutsu).length) {
+        var chars = data['角色'] || {};
+        for (var ck in chars) {
+          var cn = chars[ck]['忍术列表'] || {};
+          if (cn[name]) { ninjutsu = cn[name]; break; }
+        }
+      }
+      if (!ninjutsu || !Object.keys(ninjutsu).length) {
+        openModal('忍术详情', '<div class="empty-state">未找到该忍术详情</div>');
+        return;
+      }
+      var html = '<div class="modal-field"><div class="mf-label">忍术名称</div><div class="mf-value" style="font-size:1rem;font-weight:600;color:var(--orange);">' + escapeHtml(name) + '</div></div><hr class="modal-divider">';
+      var fields = kvToDisplay(ninjutsu);
+      for (var i = 0; i < fields.length; i++) {
+        html += '<div class="modal-field"><div class="mf-label">' + escapeHtml(fields[i].label) + '</div><div class="mf-value">' + escapeHtml(String(fields[i].value || '—')) + '</div></div>';
+      }
+      openModal('忍术·' + name, html);
+    } catch (e) { openModal('忍术详情', '<div class="empty-state">加载异常</div>'); }
+  };
+
+  window.openSkillDetail = function(name, type) {
+    try {
+      var data = currentData;
+      if (!data) { openModal('技能详情', '<div class="empty-state">暂无数据</div>'); return; }
+      var skills = safeGet(data, '玩家.特殊技能', {});
+      var sk = skills[name] || {};
+      var html = '<div class="modal-field"><div class="mf-label">技能名称</div><div class="mf-value" style="font-size:1rem;font-weight:600;color:#ce93d8;">' + escapeHtml(name) + '</div></div><hr class="modal-divider">';
+      var fields = kvToDisplay(sk);
+      for (var i = 0; i < fields.length; i++) {
+        html += '<div class="modal-field"><div class="mf-label">' + escapeHtml(fields[i].label) + '</div><div class="mf-value">' + escapeHtml(String(fields[i].value || '—')) + '</div></div>';
+      }
+      openModal('特殊技能·' + name, html);
+    } catch (e) { openModal('技能详情', '<div class="empty-state">加载异常</div>'); }
+  };
+
+  window.openItemDetail = function(name) {
+    try {
+      var data = currentData;
+      if (!data) { openModal('物品详情', '<div class="empty-state">暂无数据</div>'); return; }
+      var backpack = safeGet(data, '玩家.背包', {});
+      var item = backpack[name] || {};
+      var html = '<div class="modal-field"><div class="mf-label">物品名称</div><div class="mf-value" style="font-size:1rem;font-weight:600;color:var(--gold);">' + escapeHtml(name) + '</div></div><hr class="modal-divider">';
+      var fields = kvToDisplay(item);
+      for (var i = 0; i < fields.length; i++) {
+        html += '<div class="modal-field"><div class="mf-label">' + escapeHtml(fields[i].label) + '</div><div class="mf-value">' + escapeHtml(String(fields[i].value || '—')) + '</div></div>';
+      }
+      openModal('物品·' + name, html);
+    } catch (e) { openModal('物品详情', '<div class="empty-state">加载异常</div>'); }
+  };
+
+  window.openNPCDetail = function(name) {
+    try {
+      var data = currentData;
+      if (!data) { openModal('角色详情', '<div class="empty-state">暂无数据</div>'); return; }
+      var chars = data['角色'] || {};
+      var npc = chars[name];
+      if (!npc) { openModal('角色详情', '<div class="empty-state">未找到该角色数据</div>'); return; }
+      var html = '';
+      html += '<div class="modal-field"><div class="mf-label">角色名称</div><div class="mf-value" style="font-size:1.1rem;font-weight:600;">' + escapeHtml(name) + '</div></div><hr class="modal-divider">';
+      var fields = kvToDisplay(npc, ['忍术列表', '特殊技能', '背包', '红颜']);
+      for (var i = 0; i < fields.length; i++) {
+        var f = fields[i];
+        var val = String(f.value || '—');
+        if (f.key === '好感度') {
+          html += '<div class="modal-field"><div class="mf-label">好感度</div><div class="mf-value">' + renderAffection(f.value) + '</div></div>';
+        } else if (f.key === '查克拉属性') {
+          html += '<div class="modal-field"><div class="mf-label">查克拉属性</div><div class="mf-value">' + renderChakraTag(f.value) + '</div></div>';
+        } else if (f.key === '写轮眼状态') {
+          html += '<div class="modal-field"><div class="mf-label">写轮眼</div><div class="mf-value">' + renderSharingan(f.value) + '</div></div>';
+        } else if (f.key === '仙人模式' && f.value) {
+          html += '<div class="modal-field"><div class="mf-label">仙人模式</div><div class="mf-value">' + escapeHtml(val) + ' <span class="confidential-tag">最高机密</span></div></div>';
+        } else if (f.key === '忍者等级') {
+          var rankStr = getRank(f.value);
+          html += '<div class="modal-field"><div class="mf-label">忍者等级</div><div class="mf-value">' + escapeHtml(val) + ' (' + escapeHtml(rankStr) + ')</div></div>';
+        } else {
+          html += '<div class="modal-field"><div class="mf-label">' + escapeHtml(f.label) + '</div><div class="mf-value">' + escapeHtml(val) + '</div></div>';
+        }
+      }
+      var ninjutsu = npc['忍术列表'] || {};
+      if (Object.keys(ninjutsu).length) {
+        html += '<hr class="modal-divider"><div style="font-size:0.75rem;color:var(--gold);margin-bottom:6px;">忍术列表</div>';
+        html += '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
+        for (var nk in ninjutsu) {
+          if (ninjutsu.hasOwnProperty(nk)) {
+            html += '<span style="padding:2px 8px;background:rgba(255,107,53,0.1);border-radius:12px;font-size:0.7rem;color:var(--text-secondary);">' + escapeHtml(nk) + '</span>';
+          }
+        }
+        html += '</div>';
+      }
+      openModal('角色·' + name, html);
+    } catch (e) { openModal('角色详情', '<div class="empty-state">加载异常</div>'); }
+  };
+
+  window.openRedChamber = function() {
+    try {
+      var data = currentData;
+      if (!data) { openModal('红颜档案', '<div class="empty-state">暂无数据</div>'); return; }
+      var chars = data['角色'] || {};
+      var sister = chars['夜雪凝'];
+      if (!sister) { openModal('红颜档案', '<div class="empty-state">未找到角色数据</div>'); return; }
+      var rc = sister['红颜'];
+      if (!rc) { openModal('红颜档案', '<div class="empty-state">未开放红颜档案</div>'); return; }
+      var html = '';
+
+      // Section 1: Basic Archive
+      html += '<div class="red-chamber-section">';
+      html += '<div class="rcs-title">📋 基础档案</div>';
+      var basicFields = kvToDisplay(rc, ['私密外观', '调教与开发', '纯洁度与经历', '生育与怀孕', '外观', 'body']);
+      if (basicFields.length) {
+        for (var i = 0; i < basicFields.length; i++) {
+          html += '<div class="modal-field"><div class="mf-label">' + escapeHtml(basicFields[i].label) + '</div><div class="mf-value">' + escapeHtml(String(basicFields[i].value || '—')) + '</div></div>';
+        }
+      } else {
+        html += '<div style="color:var(--text-muted);font-size:0.75rem;">基础档案信息暂未记录</div>';
+      }
+      html += '</div>';
+
+      // Section 2: Private Appearance
+      html += '<div class="red-chamber-section">';
+      html += '<div class="rcs-title">🌸 私密外观</div>';
+      html += '<div class="rcs-grid">';
+      var bodyData = rc['私密外观'] || rc['外观'] || rc['body'] || {};
+      for (var bp = 0; bp < BODY_PARTS.length; bp++) {
+        var part = BODY_PARTS[bp];
+        var partVal = bodyData[part.key] || bodyData[part.label] || '';
+        html += '<div class="rcs-item">' +
+          '<div class="ri-label">' + escapeHtml(part.label) + '</div>' +
+          '<div class="ri-value">' + escapeHtml(partVal || '—') + '</div>' +
+          '</div>';
+      }
+      html += '</div></div>';
+
+      // Section 3: Training & Development
+      html += '<div class="red-chamber-section">';
+      html += '<div class="rcs-title">🔮 调教与开发</div>';
+      var training = rc['调教与开发'] || {};
+      var trainingFields = typeof training === 'object' ? kvToDisplay(training) : [{ key: '记录', label: '记录', value: training }];
+      if (trainingFields.length) {
+        for (var ti = 0; ti < trainingFields.length; ti++) {
+          html += '<div class="modal-field"><div class="mf-label">' + escapeHtml(trainingFields[ti].label) + '</div><div class="mf-value">' + escapeHtml(String(trainingFields[ti].value || '—')) + '</div></div>';
+        }
+      } else {
+        html += '<div style="color:var(--text-muted);font-size:0.75rem;">暂无记录</div>';
+      }
+      html += '</div>';
+
+      // Section 4: Purity & Experience
+      html += '<div class="red-chamber-section">';
+      html += '<div class="rcs-title">💫 纯洁度与经历</div>';
+      var purity = rc['纯洁度与经历'] || {};
+      var purityFields = typeof purity === 'object' ? kvToDisplay(purity) : [{ key: '记录', label: '记录', value: purity }];
+      if (purityFields.length) {
+        for (var pi = 0; pi < purityFields.length; pi++) {
+          html += '<div class="modal-field"><div class="mf-label">' + escapeHtml(purityFields[pi].label) + '</div><div class="mf-value">' + escapeHtml(String(purityFields[pi].value || '—')) + '</div></div>';
+        }
+      } else {
+        html += '<div style="color:var(--text-muted);font-size:0.75rem;">暂无记录</div>';
+      }
+      html += '</div>';
+
+      // Section 5: Fertility & Pregnancy
+      html += '<div class="red-chamber-section">';
+      html += '<div class="rcs-title">🌱 生育与怀孕</div>';
+      var fertility = rc['生育与怀孕'] || {};
+      var fertilityFields = typeof fertility === 'object' ? kvToDisplay(fertility) : [{ key: '记录', label: '记录', value: fertility }];
+      if (fertilityFields.length) {
+        for (var fi = 0; fi < fertilityFields.length; fi++) {
+          html += '<div class="modal-field"><div class="mf-label">' + escapeHtml(fertilityFields[fi].label) + '</div><div class="mf-value">' + escapeHtml(String(fertilityFields[fi].value || '—')) + '</div></div>';
+        }
+      } else {
+        html += '<div style="color:var(--text-muted);font-size:0.75rem;">暂无记录</div>';
+      }
+      html += '</div>';
+
+      openModal('🌸 红颜档案 · 夜雪凝', html);
+    } catch (e) {
+      console.error('openRedChamber error', e);
+      openModal('红颜档案', '<div class="empty-state">加载异常</div>');
+    }
+  };
+
+  /* ========== Init ========== */
+  document.addEventListener('DOMContentLoaded', function() {
+    // Tab switching
+    var tabBtns = document.querySelectorAll('.tab-btn');
+    for (var i = 0; i < tabBtns.length; i++) {
+      (function(btn) {
+        btn.addEventListener('click', function() {
+          var tabId = btn.getAttribute('data-tab');
+          if (tabId) switchTab(tabId);
+        });
+      })(tabBtns[i]);
+    }
+
+    // Initial data load
+    handleDataUpdate();
+
+    // Subscribe to events (both possible names)
+    document.addEventListener('VARIABLE_UPDATE_ENDED', function() {
+      handleDataUpdate();
+    });
+    document.addEventListener('VITE_VARIABLE_UPDATE_ENDED', function() {
+      handleDataUpdate();
+    });
+
+    // Polling fallback every 1.5s
+    setInterval(function() {
+      handleDataUpdate();
+    }, 1500);
+  });
+
+})();
+</script>
+
+</body>
+</html>
