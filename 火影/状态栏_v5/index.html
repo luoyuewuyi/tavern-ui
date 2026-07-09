@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>火影状态栏-诊断v5</title>
+<style>
+body{margin:16px;background:#0a0a0f;color:#e0e0e0;font:14px monospace;line-height:1.8}
+h2{color:#ff6b35;border-bottom:1px solid rgba(255,107,53,0.3);padding-bottom:4px}
+.json{background:rgba(255,255,255,0.05);padding:12px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-height:400px;overflow-y:auto}
+.ok{color:#7cb342}.fail{color:#ff1744}.warn{color:#ffd54f}
+</style>
+</head>
+<body>
+
+<h2>火影状态栏 诊断v5</h2>
+<div id="out">加载中...</div>
+
+<script>
+(function(){
+  var out = document.getElementById('out');
+  function log(msg, cls) { out.innerHTML += '<div class="'+(cls||'')+'">' + msg + '</div>'; }
+
+  // Step 1: check what globals exist
+  log('<b>=== Step 1: 全局函数检查 ===</b>');
+  try { log('window.getVariables: ' + (typeof window.getVariables), window.getVariables ? 'ok' : 'fail'); } catch(e) { log('window.getVariables: ERROR ' + e.message, 'fail'); }
+  try { log('getAllVariables: ' + (typeof getAllVariables), typeof getAllVariables==='function' ? 'ok' : 'fail'); } catch(e) { log('getAllVariables: ERROR ' + e.message, 'fail'); }
+  try { log('window.Mvu: ' + (typeof window.Mvu), window.Mvu ? 'ok' : 'fail'); } catch(e) { log('window.Mvu: ERROR ' + e.message, 'fail'); }
+  try { log('waitGlobalInitialized: ' + (typeof waitGlobalInitialized), typeof waitGlobalInitialized==='function' ? 'ok' : 'fail'); } catch(e) { log('waitGlobalInitialized: ERROR ' + e.message, 'fail'); }
+  try { log('eventOn: ' + (typeof eventOn), typeof eventOn==='function' ? 'ok' : 'fail'); } catch(e) { log('eventOn: ERROR ' + e.message, 'fail'); }
+
+  // Step 2: try all 3 sources
+  log('<b>=== Step 2: 数据源读取 ===</b>');
+
+  try {
+    var getVars = window.getVariables ? window.getVariables({ type: 'message' }) : null;
+    log('window.getVariables({type:"message"}):');
+    log('<div class="json">' + JSON.stringify(getVars, null, 2).replace(/</g,'&lt;') + '</div>');
+    if (getVars && getVars.stat_data) {
+      log('  -> stat_data keys: ' + JSON.stringify(Object.keys(getVars.stat_data)), 'ok');
+      log('  -> stat_data sample: ' + JSON.stringify(getVars.stat_data).substring(0, 500), 'ok');
+    } else {
+      log('  -> NO stat_data', 'warn');
+    }
+  } catch(e) { log('window.getVariables ERROR: ' + e.message, 'fail'); }
+
+  try {
+    var allVars = (typeof getAllVariables === 'function') ? getAllVariables() : null;
+    log('getAllVariables():');
+    log('<div class="json">' + JSON.stringify(allVars, null, 2).replace(/</g,'&lt;').substring(0, 3000) + '</div>');
+    if (allVars && allVars.stat_data) {
+      log('  -> stat_data keys: ' + JSON.stringify(Object.keys(allVars.stat_data)), 'ok');
+    } else {
+      log('  -> NO stat_data or null', 'warn');
+    }
+  } catch(e) { log('getAllVariables ERROR: ' + e.message, 'fail'); }
+
+  try {
+    if (window.Mvu && window.Mvu.getMvuData) {
+      var mvuData = window.Mvu.getMvuData({ type: 'message', message_id: -1 });
+      log('Mvu.getMvuData({message_id:-1}):');
+      log('<div class="json">' + JSON.stringify(mvuData, null, 2).replace(/</g,'&lt;').substring(0, 3000) + '</div>');
+      if (mvuData && mvuData.stat_data) {
+        log('  -> stat_data keys: ' + JSON.stringify(Object.keys(mvuData.stat_data)), 'ok');
+      } else {
+        log('  -> NO stat_data', 'warn');
+      }
+    } else {
+      log('Mvu.getMvuData: NOT AVAILABLE', 'fail');
+    }
+  } catch(e) { log('Mvu.getMvuData ERROR: ' + e.message, 'fail'); }
+
+  log('<b>=== 诊断完成 ===</b>');
+})();
+</script>
+</body>
+</html>
