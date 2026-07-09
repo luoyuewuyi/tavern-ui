@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>无限流 · 状态面板</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root{
+  --bg:rgba(8,8,22,0.94);
+  --surface:rgba(14,14,38,0.85);
+  --border:rgba(100,140,240,0.14);
+  --text:#c8d0e4;
+  --text-dim:#7c85a2;
+  --accent:#6088e8;
+  --accent2:#8b5cf6;
+  --gold:#e0b044;
+  --danger:#ef5566;
+  --success:#34d399;
+  --hp:#e05555;--mp:#6088e8;--sp:#e0b044;
+  --rds:10px;--rds-sm:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Noto Sans SC',-apple-system,sans-serif;
+  background:transparent;color:var(--text);
+  font-size:0.76rem;line-height:1.55;
+  max-height:100vh;overflow-y:auto;overflow-x:hidden;
+  padding:4px 6px;-webkit-font-smoothing:antialiased;
+  scrollbar-width:thin;scrollbar-color:rgba(100,140,240,0.15) transparent;
+}
+body::-webkit-scrollbar{width:3px}
+body::-webkit-scrollbar-thumb{background:rgba(100,140,240,0.15);border-radius:2px}
+
+/* ---- loading ---- */
+.loading{text-align:center;color:var(--text-dim);padding:32px 0;font-size:0.78rem}
+.loading i{margin-right:6px;opacity:0.6}
+
+/* ---- panel ---- */
+.panel{
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:var(--rds);
+  padding:10px;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  max-width:100%;
+}
+
+/* ---- grid layout ---- */
+.modules-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:8px;
+}
+
+/* ---- module card ---- */
+.mod{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--rds-sm);
+  padding:10px 10px 8px;
+  transition:border-color 0.25s;
+}
+.mod:hover{border-color:rgba(100,140,240,0.22)}
+.mod-title{
+  font-size:0.76rem;font-weight:700;
+  color:var(--text);
+  display:flex;align-items:center;gap:5px;
+  margin-bottom:7px;padding-bottom:5px;
+  border-bottom:1px solid rgba(255,255,255,0.03);
+  letter-spacing:0.3px;
+}
+.mod-title i{font-size:0.7rem;color:var(--accent);width:15px;text-align:center}
+
+/* ---- bars ---- */
+.bars-wrap{margin-bottom:6px}
+.bar-r{display:flex;align-items:center;gap:6px;margin-bottom:2px}
+.bar-r .bl{width:22px;font-size:0.6rem;font-weight:700;text-align:right;font-family:'Orbitron',monospace}
+.bar-r .bl.hp{color:var(--hp)}.bar-r .bl.mp{color:var(--mp)}.bar-r .bl.sp{color:var(--sp)}
+.bar-r .bt{flex:1;height:5px;background:rgba(255,255,255,0.04);border-radius:3px;overflow:hidden;min-width:30px}
+.bar-r .bf{height:100%;border-radius:3px;transition:width 0.5s ease;min-width:0}
+.bar-r .bf.hp{background:linear-gradient(90deg,#c0392b,#e05555)}
+.bar-r .bf.mp{background:linear-gradient(90deg,#2b6cb0,#5088e8)}
+.bar-r .bf.sp{background:linear-gradient(90deg,#b07010,#d0a040)}
+.bar-r .bv{font-size:0.6rem;color:var(--text-dim);width:58px;text-align:right;white-space:nowrap;font-family:'Orbitron',monospace}
+
+/* ---- stat grid ---- */
+.stat-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;margin:5px 0}
+.stat-cell{text-align:center;background:rgba(8,8,22,0.5);border:1px solid rgba(255,255,255,0.03);border-radius:4px;padding:4px 2px;transition:all 0.2s}
+.stat-cell:hover{border-color:rgba(120,150,255,0.2);background:rgba(14,14,38,0.7)}
+.stat-cell .sv{font-family:'Orbitron',monospace;font-size:0.82rem;font-weight:700;color:var(--gold)}
+.stat-cell .sn{font-size:0.58rem;color:var(--text-dim);margin-top:1px}
+
+/* ---- info rows ---- */
+.info-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.015);font-size:0.72rem;gap:6px}
+.info-row .ik{color:var(--text-dim);flex-shrink:0;white-space:nowrap}
+.info-row .iv{text-align:right;word-break:break-word;overflow-wrap:break-word}
+.info-row:last-child{border-bottom:none}
+
+/* ---- badges ---- */
+.badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:0.62rem;margin:1px 1px;font-weight:600}
+.badge.legend{background:rgba(224,176,68,0.15);color:var(--gold);border:1px solid rgba(224,176,68,0.2)}
+.badge.epic{background:rgba(162,100,255,0.15);color:#b080ff;border:1px solid rgba(162,100,255,0.2)}
+.badge.rare{background:rgba(96,136,232,0.15);color:#80a0f0;border:1px solid rgba(96,136,232,0.2)}
+.badge.normal{background:rgba(200,200,200,0.08);color:#9a9a9a}
+.badge.plain{background:rgba(200,200,200,0.06);color:#aaa}
+.badge.broken{background:rgba(120,120,120,0.1);color:#777}
+.badge.mythic{background:rgba(239,85,102,0.15);color:#ff5577;border:1px solid rgba(239,85,102,0.2)}
+.badge.active{background:rgba(52,211,153,0.12);color:var(--success)}
+.badge.done{background:rgba(52,211,153,0.1);color:var(--success)}
+.badge.pending{background:rgba(224,176,68,0.1);color:var(--gold)}
+.badge.unaccepted{background:rgba(124,133,162,0.1);color:var(--text-dim)}
+.badge.warn{background:rgba(239,85,102,0.1);color:var(--danger)}
+.badge.info{background:rgba(96,136,232,0.1);color:var(--accent)}
+
+/* ---- injury ---- */
+.injury-badge{display:inline-block;padding:1px 7px;border-radius:3px;font-size:0.66rem;font-weight:600}
+.injury-badge.none{background:rgba(52,211,153,0.1);color:var(--success)}
+.injury-badge.light{background:rgba(224,176,68,0.1);color:var(--gold)}
+.injury-badge.severe{background:rgba(239,85,102,0.1);color:var(--danger)}
+
+/* ---- tooltip ---- */
+.tip-wrap{position:relative;display:inline-block;cursor:help}
+.tip-wrap .tip{
+  visibility:hidden;opacity:0;
+  position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%) translateY(4px);
+  background:rgba(8,8,22,0.96);border:1px solid rgba(120,160,240,0.25);
+  border-radius:6px;padding:5px 9px;
+  font-size:0.64rem;line-height:1.45;
+  color:#c8d0e4;white-space:nowrap;
+  max-width:240px;word-break:break-all;white-space:normal;
+  z-index:999;pointer-events:none;
+  transition:opacity 0.2s,visibility 0.2s,transform 0.2s;
+  box-shadow:0 4px 16px rgba(0,0,0,0.45);
+  text-align:center;
+}
+.tip-wrap:hover .tip{visibility:visible;opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---- companions table ---- */
+.tbl{width:100%;border-collapse:collapse;font-size:0.68rem}
+.tbl td{padding:2px 4px;border-bottom:1px solid rgba(255,255,255,0.015);vertical-align:middle}
+.tbl tr:hover td{background:rgba(100,140,240,0.03)}
+
+/* ---- rec list ---- */
+.rec-section{margin-top:8px;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rds-sm)}
+.rec-title{font-size:0.75rem;font-weight:700;color:var(--gold);margin-bottom:4px;display:flex;align-items:center;gap:5px}
+.rec-title i{font-size:0.7rem;opacity:0.85}
+.rec-li{list-style:none;padding:0;margin:2px 0 0}
+.rec-li li{
+  font-size:0.7rem;padding:2px 0 2px 13px;position:relative;
+  transition:color 0.2s;color:var(--text-dim);
+}
+.rec-li li:hover{color:var(--text)}
+.rec-li li:before{content:'›';position:absolute;left:0;color:var(--accent);font-size:0.7rem;top:2px;font-weight:700}
+
+/* ---- quality colors ---- */
+.q-broken{color:#777}
+.q-plain{color:#aaa}
+.q-normal{color:#aaa}
+.q-rare{color:#80a0f0}
+.q-epic{color:#b080ff}
+.q-legend{color:var(--gold)}
+.q-mythic{color:#ff5577}
+
+/* ---- misc ---- */
+.empty{color:var(--text-dim);font-size:0.68rem;font-style:italic;padding:2px 0}
+.highlight-gold{color:var(--gold);font-weight:600}
+.pts-val{font-family:'Orbitron',monospace;color:var(--gold);font-weight:600;font-size:0.72rem}
+.stat-v{font-family:'Orbitron',monospace;color:var(--gold);font-weight:700}
+.fav-high{color:var(--success)}
+.fav-mid{color:var(--gold)}
+.fav-low{color:var(--danger)}
+</style>
+</head>
+<body>
+<div class="panel" id="root">
+  <div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> 等待数据…</div>
+</div>
+<script>
+/* ===== utilities ===== */
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function nvl(v,d){return v!=null&&v!==''?String(v).trim():(d||'—')}
+function num(v){var n=parseInt(v,10);return isNaN(n)?0:n}
+function pct(c,m){return m>0?Math.min(c/m*100,100):0}
+
+/* ===== quality helpers ===== */
+function qualityBadge(q){
+  if(!q||q==='—')return'';
+  q=q.trim();
+  var map={
+    '残品':'broken','凡品':'plain','普通':'normal','精良':'rare',
+    '稀有':'rare','史诗':'epic','传说':'legend','神话':'mythic',
+    '神话级':'mythic','传说级':'legend','史诗级':'epic','精良级':'rare','凡品级':'plain'
+  };
+  var cls=map[q]||'normal';
+  return '<span class="badge '+cls+'">'+esc(q)+'</span>';
+}
+function qColorCls(q){
+  if(!q)return'q-plain';
+  q=q.trim();
+  var map={'残品':'q-broken','凡品':'q-plain','普通':'q-normal','精良':'q-rare','稀有':'q-rare','史诗':'q-epic','传说':'q-legend','神话':'q-mythic'};
+  return map[q]||'q-plain';
+}
+
+/* ===== tooltip wrap ===== */
+function tipWrap(inner,tipText){
+  if(!tipText||tipText==='—')return inner;
+  return '<span class="tip-wrap">'+inner+'<span class="tip">'+esc(tipText)+'</span></span>';
+}
+
+/* ===== parse equipment: name(quality) desc? ===== */
+function parseEquipItem(raw){
+  var m=raw.match(/^(.+?)\(([^)]+)\)(?:\s+(.+))?$/);
+  if(!m)return{name:raw.trim(),quality:'',desc:''};
+  return{name:m[1].trim(),quality:m[2].trim(),desc:(m[3]||'').trim()};
+}
+/* ===== parse backpack: name(quality)x# desc? ===== */
+function parseBackpackItem(raw){
+  var m=raw.match(/^(.+?)\(([^)]+)\)x(\d+)(?:\s+(.+))?$/);
+  if(!m){
+    var m2=raw.match(/^(.+?)\(([^)]+)\)(?:\s+(.+))?$/);
+    if(m2)return{name:m2[1].trim(),quality:m2[2].trim(),qty:1,desc:(m2[3]||'').trim()};
+    return{name:raw.trim(),quality:'',qty:1,desc:''};
+  }
+  return{name:m[1].trim(),quality:m[2].trim(),qty:parseInt(m[3])||1,desc:(m[4]||'').trim()};
+}
+/* ===== parse skill: name(type,proficiency) desc? ===== */
+function parseSkillItem(raw){
+  var m=raw.match(/^(.+?)\(([^,]+),([^)]+)\)(?:\s+(.+))?$/);
+  if(!m){
+    var m2=raw.match(/^(.+?)\(([^)]+)\)(?:\s+(.+))?$/);
+    if(m2)return{name:m2[1].trim(),type:m2[2].trim(),prof:'',desc:(m2[3]||'').trim()};
+    return{name:raw.trim(),type:'',prof:'',desc:''};
+  }
+  return{name:m[1].trim(),type:m[2].trim(),prof:m[3].trim(),desc:(m[4]||'').trim()};
+}
+/* ===== parse talent: name(grade) desc? ===== */
+function parseTalentItem(raw){
+  var m=raw.match(/^(.+?)\(([^)]+)\)(?:\s+(.+))?$/);
+  if(!m)return{name:raw.trim(),grade:'',desc:''};
+  return{name:m[1].trim(),grade:m[2].trim(),desc:(m[3]||'').trim()};
+}
+
+/* ===== main parse ===== */
+function parseStatus(raw){
+  if(!raw||raw.trim()==='')return null;
+  var lines=raw.trim().split('\n');
+  if(lines.length<2)return null;
+  var d={};
+
+  /* line 1: basic info */
+  var p1=lines[0].split('|');
+  d.name=nvl(p1[0],'—');
+  d.rank=nvl(p1[1],'—');
+  d.cls=nvl(p1[2],'—');
+
+  var hpS=(p1[3]||'0/100').split('/');
+  d.hp=num(hpS[0]);d.hpMax=num(hpS[1])||100;
+  var mpS=(p1[4]||'0/100').split('/');
+  d.mp=num(mpS[0]);d.mpMax=num(mpS[1])||1;
+  var spS=(p1[5]||'0/100').split('/');
+  d.sp=num(spS[0]);d.spMax=num(spS[1])||1;
+  d.bloodline=nvl(p1[6],'—');
+
+  /* line 2: attributes */
+  if(lines[1]){
+    var p2=lines[1].split('|');
+    d.str=nvl(p2[0],'—');d.agi=nvl(p2[1],'—');d.con=nvl(p2[2],'—');
+    d.wis=nvl(p2[3],'—');d.int=nvl(p2[4],'—');d.cha=nvl(p2[5],'—');
+    d.remainPts=nvl(p2[6],'0');
+  }
+
+  /* section lines */
+  d.talents=[];d.skills=[];d.equip=[];d.backpack=[];d.companions=[];
+  d.pointItems={};d.injury='—';d.clothes='—';d.recommendations=[];
+
+  for(var i=2;i<lines.length;i++){
+    var line=lines[i].trim();
+    if(!line)continue;
+    var ci=line.indexOf(':');
+    if(ci<0)continue;
+    var key=line.substring(0,ci);
+    var val=line.substring(ci+1);
+    if(!val)continue;
+
+    switch(key){
+      case'天赋':case'Talents':case'talents':
+        val.split('|').forEach(function(s){s=s.trim();if(s)d.talents.push(parseTalentItem(s))});
+        break;
+      case'技能':case'Skills':case'skills':
+        val.split('|').forEach(function(s){s=s.trim();if(s)d.skills.push(parseSkillItem(s))});
+        break;
+      case'装备':case'Equipment':case'equipment':
+        val.split('|').forEach(function(s){s=s.trim();if(s)d.equip.push(parseEquipItem(s))});
+        break;
+      case'背包':case'Inventory':case'inventory':
+        val.split('|').forEach(function(s){s=s.trim();if(s)d.backpack.push(parseBackpackItem(s))});
+        break;
+      case'任务':case'Tasks':case'tasks':case'Quest':case'quest':
+        parseTasks(val,d);
+        break;
+      case'队友':case'Companions':case'companions':
+        val.split('|').forEach(function(s){s=s.trim();if(s)d.companions.push(parseCompanion(s))});
+        break;
+      case'积分':case'Points':case'points':
+        parsePoints(val,d);
+        break;
+      case'伤势':case'Injury':case'injury':
+        d.injury=nvl(val,'—');
+        break;
+      case'穿着':case'Clothes':case'clothes':case'Clothing':case'clothing':
+        d.clothes=nvl(val,'—');
+        break;
+      case'行动推荐':case'行动建议':case'Recommend':case'recommend':
+        d.recommendations=val.split('|').map(function(s){return s.trim()}).filter(Boolean);
+        break;
+    }
+  }
+  return d;
+}
+
+function parseTasks(val,d){
+  d.mainTask='';d.mainNode=0;d.mainTotal=0;d.subTasks=[];
+  var items=val.split('|');
+  items.forEach(function(item){
+    item=item.trim();
+    if(!item)return;
+
+    /* main quest */
+    if(item.indexOf('主线:')===0||item.indexOf('Main:')===0){
+      var content=item.substring(item.indexOf(':')+1);
+      var nodeM=content.match(/\(节点\s*(\d+)\s*\/\s*(\d+)\)/);
+      if(nodeM){
+        d.mainTask=content.substring(0,content.indexOf('(节点')).trim();
+        d.mainNode=num(nodeM[1]);d.mainTotal=num(nodeM[2]);
+      }else{
+        /* try English format (Node N/M) */
+        var nodeM2=content.match(/\(Node\s*(\d+)\s*\/\s*(\d+)\)/i);
+        if(nodeM2){
+          d.mainTask=content.substring(0,content.indexOf('(Node')).trim();
+          d.mainNode=num(nodeM2[1]);d.mainTotal=num(nodeM2[2]);
+        }else{
+          d.mainTask=content;
+        }
+      }
+      return;
+    }
+
+    /* side quest */
+    if(item.indexOf('支线:')===0||item.indexOf('Side:')===0){
+      var sc=item.substring(item.indexOf(':')+1);
+      d.subTasks.push(parseSideTask(sc));
+      return;
+    }
+
+    /* treat as generic task */
+    d.subTasks.push(parseSideTask(item));
+  });
+}
+
+function parseSideTask(raw){
+  var m=raw.match(/^(.+?)\(([^)]+)\)(?:\s+(.+))?$/);
+  if(m)return{name:m[1].trim(),status:m[2].trim(),desc:(m[3]||'').trim()};
+  return{name:raw,status:'',desc:''};
+}
+
+function parseCompanion(raw){
+  var m=raw.match(/^(.+?)\(([^)]*)\)(?:\s+(.+))?$/);
+  if(!m)return{name:raw,role:'',favor:'0',attitude:'',status:'',desc:''};
+  var inner=m[2]||'';
+  var parts=inner.split(',');
+  return{
+    name:m[1].trim(),
+    role:(parts[0]||'').trim(),
+    favor:(parts[1]||'0').trim(),
+    attitude:(parts[2]||'').trim(),
+    status:(parts[3]||'').trim(),
+    desc:(m[3]||'').trim()
+  };
+}
+
+function parsePoints(val,d){
+  d.points=0;d.branches={};
+  var items=val.split('|');
+  if(items.length){
+    d.points=num(items[0]);
+    for(var i=1;i<items.length;i++){
+      var m=items[i].match(/^支线剧情([A-Za-z])\s*:\s*(\d+)$/);
+      if(m){d.branches[m[1].toUpperCase()]=num(m[2]);continue}
+      var m2=items[i].match(/^Branch\s+([A-Za-z])\s*:\s*(\d+)$/i);
+      if(m2){d.branches[m2[1].toUpperCase()]=num(m2[2])}
+    }
+  }
+}
+
+/* ===== rendering ===== */
+function render(d){
+  var root=document.getElementById('root');
+  if(!d){
+    root.innerHTML='<div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> 等待数据…</div>';
+    return;
+  }
+
+  var h='';
+  h+='<div class="modules-grid">';
+
+  /* ===== MODULE 1: Status ===== */
+  h+='<div class="mod">';
+  h+='  <div class="mod-title"><i class="fa-solid fa-user-astronaut"></i> '+esc(d.name)+' <span style="color:var(--accent);font-weight:400;font-size:0.66rem">· '+esc(d.rank)+' · '+esc(d.cls)+'</span></div>';
+
+  /* HP/MP/SP bars */
+  h+='<div class="bars-wrap">';
+  h+='  <div class="bar-r"><span class="bl hp">HP</span><div class="bt"><div class="bf hp" style="width:'+pct(d.hp,d.hpMax)+'%"></div></div><span class="bv">'+d.hp+' / '+d.hpMax+'</span></div>';
+  h+='  <div class="bar-r"><span class="bl mp">MP</span><div class="bt"><div class="bf mp" style="width:'+pct(d.mp,d.mpMax)+'%"></div></div><span class="bv">'+d.mp+' / '+d.mpMax+'</span></div>';
+  h+='  <div class="bar-r"><span class="bl sp">SP</span><div class="bt"><div class="bf sp" style="width:'+pct(d.sp,d.spMax)+'%"></div></div><span class="bv">'+d.sp+' / '+d.spMax+'</span></div>';
+  h+='</div>';
+
+  /* injury */
+  var inj=d.injury||'—';
+  var injCls='none';
+  if(inj.indexOf('重')>=0||inj.indexOf('骨折')>=0||inj.indexOf('致命')>=0||inj.indexOf('濒死')>=0)injCls='severe';
+  else if(inj.indexOf('轻')>=0||inj.indexOf('擦伤')>=0||inj.indexOf('浅')>=0)injCls='light';
+  else if(inj!=='—'&&inj!=='无'&&inj!=='完好')injCls='light';
+  h+='<div class="info-row"><span class="ik">伤势</span><span class="iv"><span class="injury-badge '+injCls+'">'+esc(inj)+'</span></span></div>';
+
+  /* attributes grid */
+  h+='<div class="stat-grid">';
+  h+='  <div class="stat-cell"><div class="sv">'+esc(d.str)+'</div><div class="sn">力量</div></div>';
+  h+='  <div class="stat-cell"><div class="sv">'+esc(d.agi)+'</div><div class="sn">敏捷</div></div>';
+  h+='  <div class="stat-cell"><div class="sv">'+esc(d.con)+'</div><div class="sn">体质</div></div>';
+  h+='  <div class="stat-cell"><div class="sv">'+esc(d.wis)+'</div><div class="sn">精神</div></div>';
+  h+='  <div class="stat-cell"><div class="sv">'+esc(d.int)+'</div><div class="sn">智力</div></div>';
+  h+='  <div class="stat-cell"><div class="sv">'+esc(d.cha)+'</div><div class="sn">魅力</div></div>';
+  h+='</div>';
+
+  h+='<div class="info-row"><span class="ik">剩余属性点</span><span class="iv"><span class="pts-val">'+esc(d.remainPts)+'</span></span></div>';
+  h+='<div class="info-row"><span class="ik">血统体质</span><span class="iv">'+esc(d.bloodline)+'</span></div>';
+
+  /* points */
+  var ptsHtml='<span class="pts-val">'+d.points+'</span>';
+  var branchKeys=Object.keys(d.branches);
+  if(branchKeys.length){
+    ptsHtml+=' <span style="font-size:0.62rem;color:var(--text-dim)">|</span> ';
+    branchKeys.sort().forEach(function(k){
+      ptsHtml+='<span style="color:var(--gold);font-size:0.63rem;font-weight:600">D'+k+'</span> ';
+      ptsHtml+='<span style="font-family:Orbitron,monospace;color:var(--gold);font-size:0.6rem">'+d.branches[k]+'</span> ';
+    });
+  }
+  h+='<div class="info-row"><span class="ik">积分</span><span class="iv">'+ptsHtml+'</span></div>';
+
+  /* clothes */
+  h+='<div class="info-row" style="border-bottom:none"><span class="ik">穿着</span><span class="iv" style="font-size:0.68rem;color:var(--text-dim)">'+esc(d.clothes)+'</span></div>';
+
+  h+='</div>';
+
+  /* ===== MODULE 2: Tasks ===== */
+  h+='<div class="mod"><div class="mod-title"><i class="fa-solid fa-list-check"></i> 任务追踪</div>';
+
+  if(d.mainTask){
+    var mtTip=d.mainTask;
+    h+='<div class="info-row"><span class="ik"><i class="fa-solid fa-flag" style="color:var(--danger);font-size:0.6rem;margin-right:3px"></i>主线</span><span class="iv">';
+    if(d.mainTotal>0){
+      h+=tipWrap(esc(d.mainTask)+' <span style="color:var(--text-dim);font-size:0.66rem">('+d.mainNode+'/'+d.mainTotal+')</span>',mtTip);
+    }else{
+      h+=tipWrap(esc(d.mainTask),mtTip);
+    }
+    h+='</span></div>';
+  }else{
+    h+='<div class="info-row"><span class="ik"><i class="fa-solid fa-flag" style="color:var(--text-dim);font-size:0.6rem;margin-right:3px"></i>主线</span><span class="iv empty">未激活</span></div>';
+  }
+
+  if(d.subTasks&&d.subTasks.length){
+    d.subTasks.forEach(function(t){
+      var st=t.status||'';
+      var stCls='pending';
+      if(st.indexOf('完成')>=0||st.indexOf('done')>=0||st.indexOf('Done')>=0)stCls='done';
+      else if(st.indexOf('进行')>=0||st.indexOf('active')>=0||st.indexOf('Active')>=0)stCls='active';
+      else if(st.indexOf('未')>=0||st.indexOf('unaccepted')>=0)stCls='unaccepted';
+      var tipContent=t.desc||t.name;
+      h+='<div class="info-row"><span class="ik"><span class="badge '+stCls+'" style="font-size:0.58rem">'+esc(st||'?')+'</span></span><span class="iv">'+tipWrap(esc(t.name),tipContent)+'</span></div>';
+    });
+  }else{
+    h+='<div class="empty" style="padding:2px 0 0">无支线任务</div>';
+  }
+  h+='</div>';
+
+  /* ===== MODULE 3: Inventory & Skills ===== */
+  h+='<div class="mod"><div class="mod-title"><i class="fa-solid fa-backpack"></i> 背包与技能</div>';
+
+  /* equipment */
+  if(d.equip&&d.equip.length){
+    h+='<div style="font-size:0.64rem;color:var(--text-dim);margin-bottom:2px">装备</div>';
+    d.equip.forEach(function(eq){
+      var inner='<span class="'+qColorCls(eq.quality)+'">'+esc(eq.name)+'</span>'+qualityBadge(eq.quality);
+      h+='<div class="info-row" style="padding:2px 0;font-size:0.7rem"><span class="iv" style="text-align:left;width:100%">'+tipWrap(inner,eq.desc||(eq.quality?'品质: '+eq.quality:''))+'</span></div>';
+    });
+  }
+
+  /* backpack */
+  if(d.backpack&&d.backpack.length){
+    h+='<div style="font-size:0.64rem;color:var(--text-dim);margin:3px 0 2px">物品</div>';
+    d.backpack.forEach(function(it){
+      var inner='<span class="'+qColorCls(it.quality)+'">'+esc(it.name)+'</span>'+qualityBadge(it.quality);
+      if(it.qty>1)inner+=' <span style="font-size:0.6rem;color:var(--text-dim);font-family:Orbitron,monospace">x'+it.qty+'</span>';
+      h+='<div class="info-row" style="padding:2px 0;font-size:0.7rem"><span class="iv" style="text-align:left;width:100%">'+tipWrap(inner,it.desc||(it.quality?'品质: '+it.quality+(it.qty>1?' x'+it.qty:''):''))+'</span></div>';
+    });
+  }
+
+  /* skills */
+  if(d.skills&&d.skills.length){
+    h+='<div style="font-size:0.64rem;color:var(--text-dim);margin:3px 0 2px">技能</div>';
+    d.skills.forEach(function(sk){
+      var tipTxt=sk.desc||(sk.type?'类型: '+sk.type+(sk.prof?' 熟练度: '+sk.prof:'') :'');
+      var inner='<span style="color:#c8d0e4">'+esc(sk.name)+'</span>'+
+        (sk.type?' <span class="badge info" style="font-size:0.58rem">'+esc(sk.type)+'</span>':'')+
+        (sk.prof?' <span style="font-size:0.6rem;color:var(--text-dim);font-family:Orbitron,monospace">'+esc(sk.prof)+'</span>':'');
+      h+='<div class="info-row" style="padding:2px 0;font-size:0.7rem"><span class="iv" style="text-align:left;width:100%">'+tipWrap(inner,tipTxt)+'</span></div>';
+    });
+  }
+
+  /* talents */
+  if(d.talents&&d.talents.length){
+    h+='<div style="font-size:0.64rem;color:var(--text-dim);margin:3px 0 2px">天赋</div>';
+    d.talents.forEach(function(tl){
+      var g=tl.grade||'';
+      var gCls='normal';
+      if(g.indexOf('传说')>=0||g.indexOf('legend')>=0||g.indexOf('Legend')>=0)gCls='legend';
+      else if(g.indexOf('史诗')>=0||g.indexOf('epic')>=0||g.indexOf('Epic')>=0)gCls='epic';
+      else if(g.indexOf('稀有')>=0||g.indexOf('rare')>=0||g.indexOf('Rare')>=0)gCls='rare';
+      var inner=esc(tl.name)+(g?' <span class="badge '+gCls+'" style="font-size:0.58rem">'+esc(g)+'</span>':'');
+      h+='<div class="info-row" style="padding:2px 0;font-size:0.7rem"><span class="iv" style="text-align:left;width:100%">'+tipWrap(inner,tl.desc||(g?'等级: '+g:''))+'</span></div>';
+    });
+  }
+
+  if((!d.equip||!d.equip.length)&&(!d.backpack||!d.backpack.length)&&(!d.skills||!d.skills.length)&&(!d.talents||!d.talents.length)){
+    h+='<div class="empty">空</div>';
+  }
+  h+='</div>';
+
+  /* ===== MODULE 4: Companions ===== */
+  h+='<div class="mod"><div class="mod-title"><i class="fa-solid fa-users"></i> 队友 ('+(d.companions?d.companions.length:0)+')</div>';
+  if(d.companions&&d.companions.length){
+    d.companions.forEach(function(c){
+      var fav=num(c.favor);
+      var fc=fav>=60?'fav-high':(fav>0?'fav-mid':'fav-low');
+      h+='<div class="info-row" style="padding:2px 0">';
+      h+='  <span class="ik" style="white-space:normal;word-break:break-all">'+esc(c.name);
+      if(c.role)h+=' <span style="color:var(--text-dim);font-weight:400">· '+esc(c.role)+'</span>';
+      h+='  </span>';
+      h+='  <span class="iv"><span class="'+fc+'" style="font-family:Orbitron,monospace;font-size:0.66rem;font-weight:600">'+fav+'</span>';
+      if(c.attitude)h+=' <span style="font-size:0.62rem;color:var(--text-dim)">'+esc(c.attitude)+'</span>';
+      if(c.status)h+=' <span class="badge '+(c.status.indexOf('存活')>=0||c.status.indexOf('alive')>=0?'active':'warn')+'" style="font-size:0.55rem">'+esc(c.status)+'</span>';
+      h+='  </span>';
+      h+='</div>';
+    });
+  }else{
+    h+='<div class="empty">无</div>';
+  }
+  h+='</div>';
+
+  h+='</div>'; /* end modules-grid */
+
+  /* ===== Action Recommendations ===== */
+  if(d.recommendations&&d.recommendations.length){
+    h+='<div class="rec-section">';
+    h+='  <div class="rec-title"><i class="fa-solid fa-lightbulb"></i> 行动推荐</div>';
+    h+='  <ul class="rec-li">';
+    d.recommendations.forEach(function(r){
+      if(r)h+='<li>'+esc(r)+'</li>';
+    });
+    h+='  </ul>';
+    h+='</div>';
+  }
+
+  root.innerHTML=h;
+}
+
+/* ===== polling ===== */
+function poll(){
+  try{
+    var raw=window.__statusRaw;
+    if(!raw||raw.trim()===''){render(null);return}
+    var d=parseStatus(raw);
+    render(d);
+  }catch(e){console.error('[状态栏]',e)}
+}
+poll();
+setInterval(poll,1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>无限流 · 环境信息</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root{
+  --bg:rgba(8,8,22,0.94);
+  --surface:rgba(14,14,38,0.85);
+  --border:rgba(100,140,240,0.14);
+  --text:#c8d0e4;
+  --text-dim:#7c85a2;
+  --accent:#6088e8;
+  --accent2:#8b5cf6;
+  --gold:#e0b044;
+  --danger:#ef5566;
+  --success:#34d399;
+  --rds:10px;--rds-sm:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Noto Sans SC',-apple-system,sans-serif;
+  background:transparent;color:var(--text);
+  font-size:0.78rem;line-height:1.55;
+  max-height:100vh;overflow-y:auto;overflow-x:hidden;
+  padding:4px 6px;-webkit-font-smoothing:antialiased;
+  scrollbar-width:thin;scrollbar-color:rgba(100,140,240,0.15) transparent;
+}
+body::-webkit-scrollbar{width:3px}
+body::-webkit-scrollbar-thumb{background:rgba(100,140,240,0.15);border-radius:2px}
+
+.env-panel{
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:var(--rds);
+  padding:10px 14px;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  max-width:100%;
+  transition:border-color 0.3s;
+}
+.env-panel:hover{border-color:rgba(100,140,240,0.22)}
+.env-loading{
+  text-align:center;color:var(--text-dim);padding:18px 0;
+  font-size:0.75rem;letter-spacing:0.5px;
+}
+.env-loading i{margin-right:6px;opacity:0.6}
+.env-top{
+  display:flex;justify-content:space-between;
+  align-items:center;margin-bottom:6px;gap:10px;
+}
+.env-left{display:flex;align-items:center;gap:10px;min-width:0}
+.env-name{
+  font-family:'Orbitron',monospace;
+  font-size:1.02rem;font-weight:700;
+  background:linear-gradient(135deg,#90b8ff,#b4a0ff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  letter-spacing:1px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.env-badge{
+  font-size:0.62rem;padding:2px 10px;border-radius:20px;
+  font-weight:600;letter-spacing:0.4px;white-space:nowrap;
+  flex-shrink:0;
+}
+.env-badge.classic{
+  background:rgba(96,136,232,0.14);color:#80a8f0;
+  border:1px solid rgba(96,136,232,0.22);
+}
+.env-badge.original{
+  background:rgba(139,92,246,0.14);color:#b080ff;
+  border:1px solid rgba(139,92,246,0.22);
+}
+.env-meta{
+  display:flex;flex-wrap:wrap;gap:4px 14px;
+  padding-top:5px;border-top:1px solid rgba(255,255,255,0.03);
+}
+.env-meta .mi{
+  display:flex;align-items:center;gap:4px;
+  font-size:0.7rem;color:var(--text-dim);
+  white-space:nowrap;
+}
+.env-meta .mi i{
+  width:13px;text-align:center;font-size:0.64rem;
+  color:var(--accent);opacity:0.8;
+}
+.env-meta .mi .wl{color:var(--gold)}
+.env-meta .mi .sc{color:#b0c8f0;font-weight:500}
+.env-meta .mi .tm{color:#90b8ff;font-family:'Orbitron',monospace;font-size:0.64rem}
+.env-meta .mi .dy{color:var(--gold);font-family:'Orbitron',monospace;font-size:0.64rem}
+@media(max-width:420px){
+  .env-top{flex-direction:column;align-items:flex-start;gap:4px}
+  .env-name{font-size:0.92rem}
+}
+.tip-wrap{position:relative;cursor:help;border-bottom:1px dotted rgba(255,255,255,0.2)}
+.tip-wrap .tip{visibility:hidden;opacity:0;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:rgba(10,14,30,0.95);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:8px 12px;font-size:0.6rem;color:#c0c8d8;white-space:nowrap;z-index:999;transition:opacity 0.2s;pointer-events:none;max-width:220px;white-space:pre-wrap;line-height:1.5}
+.tip-wrap:hover .tip,.tip-wrap:active .tip{visibility:visible;opacity:1}
+.env-items{margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06);display:flex;flex-wrap:wrap;gap:6px}
+.env-item{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:4px;padding:3px 8px;font-size:0.6rem;color:#c0c8d8;display:flex;align-items:center;gap:4px;transition:all 0.2s;cursor:pointer}
+.env-item:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.15);color:#fff}
+.env-item .ei-q{font-size:0.5rem;padding:0 4px;border-radius:2px;font-weight:600}
+.ei-q0{color:#888;border:1px solid #555}
+.ei-q1{color:#4fc3f7;border:1px solid #4fc3f7}
+.ei-q2{color:#ce93d8;border:1px solid #ce93d8}
+.ei-q3{color:#ffd54f;border:1px solid #ffd54f}
+.ei-q4{color:#ff6b35;border:1px solid #ff6b35}
+.ei-q5{color:#ff1744;border:1px solid #ff1744}
+</style>
+</head>
+<body>
+<div class="env-panel" id="root">
+  <div class="env-loading"><i class="fa-solid fa-spinner fa-spin"></i> 等待环境数据…</div>
+</div>
+<script>
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function nvl(v,d){return v!=null&&v!==''?String(v):(d||'—')}
+function tipWrap(name,desc,quality){
+  var qCls='ei-q'+(quality||0);
+  return '<span class="tip-wrap">'+esc(name)+'<span class="tip">'+esc(desc||'暂无详细描述')+'</span></span>';
+}
+function getQualityCls(q){var map={'普通':0,'精良':1,'稀有':2,'史诗':3,'传说':4,'神话':5};return map[q]||0;}
+
+function render(raw){
+  var root=document.getElementById('root');
+  if(!raw||raw.trim()===''){
+    root.innerHTML='<div class="env-loading"><i class="fa-solid fa-spinner fa-spin"></i> 等待环境数据…</div>';
+    return;
+  }
+  var p=raw.trim().split('|');
+  if(p.length<6){root.innerHTML='<div class="env-loading"><i class="fa-solid fa-circle-exclamation"></i> 环境数据格式异常</div>';return}
+
+  var wName=nvl(p[0],'未知世界');
+  var scene=nvl(p[1],'未知');
+  var timeline=nvl(p[2],'—');
+  var day=nvl(p[3],'—');
+  day=day.replace(/^第\s*/,'').replace(/\s*天$/,'');
+  var weather=nvl(p[4],'—');
+  var wType=nvl(p[5],'—');
+
+  var isClassic=wType.indexOf('经典')>=0||wType.indexOf('衍生')>=0;
+  var badgeCls=isClassic?'classic':'original';
+
+  var h='';
+  h+='<div class="env-top">';
+  h+='  <div class="env-left"><span class="env-name">'+esc(wName)+'</span></div>';
+  h+='  <span class="env-badge '+badgeCls+'">'+esc(wType)+'</span>';
+  h+='</div>';
+  h+='<div class="env-meta">';
+  h+='  <span class="mi"><i class="fa-solid fa-location-dot"></i><span class="sc">'+esc(scene)+'</span></span>';
+  h+='  <span class="mi"><i class="fa-regular fa-clock"></i><span class="tm">'+esc(timeline)+'</span></span>';
+  h+='  <span class="mi"><i class="fa-solid fa-calendar-day"></i><span class="dy">第 '+esc(day)+' 天</span></span>';
+  h+='  <span class="mi"><i class="fa-solid fa-cloud-sun"></i><span class="wl">'+esc(weather)+'</span></span>';
+  h+='</div>';
+  var items=[];
+  for(var i=6;i<p.length;i++){
+    var rawItem=p[i].trim();if(!rawItem)continue;
+    var parts=rawItem.match(/^(.+?)\((.+?)\)\s*(.*)/);
+    if(parts){items.push({name:parts[1],quality:parts[2],desc:parts[3]||''})}
+    else{items.push({name:rawItem,quality:'普通',desc:''})}
+  }
+  if(items.length>0){
+    h+='<div class="env-items">';
+    for(var j=0;j<items.length;j++){
+      var it=items[j];
+      var qCls='ei-q'+getQualityCls(it.quality);
+      h+='<span class="env-item">'+tipWrap(it.name,it.desc||it.quality,getQualityCls(it.quality))+'<span class="ei-q '+qCls+'">'+esc(it.quality)+'</span></span>';
+    }
+    h+='</div>';
+  }
+  root.innerHTML=h;
+}
+
+function poll(){
+  try{
+    var raw=window.__envRaw;
+    render(raw);
+  }catch(e){console.error('[环境信息]',e)}
+}
+poll();
+setInterval(poll,1000);
+</script>
+</body>
+</html>
