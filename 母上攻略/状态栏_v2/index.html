@@ -291,12 +291,22 @@
   setInterval(updateTime, 60000);
 
   /* ── read latest MVU data via API ── */
-  function readLatestData() {
-    try { var d = window.getVariables({type:'message'}); if (d && d['郑怡云']) return d; } catch(e) {}
-    try { var mv = window.Mvu; if (mv && mv.getMvuData) { var d2 = mv.getMvuData({type:'message', message_id:-1}); if (d2 && d2['郑怡云']) return d2; } } catch(e) {}
-    try { var all = window.getAllVariables ? window.getAllVariables() : null; if (all && all['郑怡云']) return all; } catch(e) {}
+  function extractStatData(v) {
+    if (!v) return null;
+    if (v.stat_data && typeof v.stat_data === 'object') return v.stat_data;
     return null;
   }
+  function readLatestData() {
+    try { var d = window.getVariables({type:'message'}); var sd = extractStatData(d); if (sd && sd['郑怡云']) return sd; } catch(e) {}
+    try { var mv = window.Mvu; if (mv && mv.getMvuData) { var d2 = mv.getMvuData({type:'message', message_id:-1}); var sd2 = extractStatData(d2); if (sd2 && sd2['郑怡云']) return sd2; } } catch(e) {}
+    try { var all = window.getAllVariables ? window.getAllVariables() : null; var sd3 = extractStatData(all); if (sd3 && sd3['郑怡云']) return sd3; } catch(e) {}
+    return null;
+  }
+  try {
+    if (window.Mvu && window.Mvu.events && window.Mvu.events.VARIABLE_UPDATE_ENDED && typeof window.eventOn === 'function') {
+      window.eventOn(window.Mvu.events.VARIABLE_UPDATE_ENDED, function() { prevDataKey = ''; poll(); });
+    }
+  } catch(e) {}
 
   /* ── clothing split ── */
   function splitClothing(val) {
