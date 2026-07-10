@@ -271,162 +271,132 @@
   const WEEK_NAMES = ['日', '一', '二', '三', '四', '五', '六'];
   const PERIOD_MAP = { 0: '深夜', 1: '凌晨', 2: '凌晨', 3: '凌晨', 4: '清晨', 5: '清晨', 6: '早晨', 7: '早晨', 8: '上午', 9: '上午', 10: '上午', 11: '中午', 12: '中午', 13: '下午', 14: '下午', 15: '下午', 16: '下午', 17: '傍晚', 18: '傍晚', 19: '晚上', 20: '晚上', 21: '晚上', 22: '深夜', 23: '深夜' };
 
-  const app = document.getElementById('status-app');
-  const timeText = document.getElementById('timeText');
   const cardContainer = document.getElementById('cardContainer');
+  const timeText = document.getElementById('timeText');
 
-  let prevRaw = '';
+  let prevDataKey = '';
 
   /* ── time ── */
   function updateTime() {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const w = WEEK_NAMES[d.getDay()];
-    const h = d.getHours();
-    const period = PERIOD_MAP[h] || '';
-    timeText.textContent = `${y}.${m}.${day} 周${w} · ${period}`;
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    var w = WEEK_NAMES[d.getDay()];
+    var h = d.getHours();
+    var period = PERIOD_MAP[h] || '';
+    timeText.textContent = y + '.' + m + '.' + day + ' 周' + w + ' \u00B7 ' + period;
   }
   updateTime();
   setInterval(updateTime, 60000);
 
-  /* ── parser ── */
-  function parseVariables(text) {
-    const lines = text.split('\n').filter(l => l.trim());
-    return lines.map(line => {
-      const trimmed = line.trim();
-      const nameMatch = trimmed.match(/^([\u4e00-\u9fff]{2,4})/);
-      if (!nameMatch) return null;
-      const name = nameMatch[1];
-      const rest = trimmed.slice(name.length).trim();
-      const fieldPairs = rest.split(/\s+/);
-      const fields = {};
-      for (const pair of fieldPairs) {
-        const idx = pair.indexOf(':');
-        if (idx === -1) continue;
-        const key = pair.slice(0, idx).trim();
-        const val = pair.slice(idx + 1).trim();
-        if (key && val) fields[key] = val;
-      }
-      return { name, fields };
-    }).filter(Boolean);
+  /* ── read latest MVU data via API ── */
+  function readLatestData() {
+    try { var d = window.getVariables({type:'message'}); if (d && d['郑怡云']) return d; } catch(e) {}
+    try { var mv = window.Mvu; if (mv && mv.getMvuData) { var d2 = mv.getMvuData({type:'message', message_id:-1}); if (d2 && d2['郑怡云']) return d2; } } catch(e) {}
+    try { var all = window.getAllVariables ? window.getAllVariables() : null; if (all && all['郑怡云']) return all; } catch(e) {}
+    return null;
   }
 
   /* ── clothing split ── */
   function splitClothing(val) {
     if (!val) return { upper: [], lower: [] };
-    const parts = val.split('+').map(s => s.trim()).filter(Boolean);
-
-    const upperKeywords = ['衬衫', '文胸', '文胸', '胸罩', '内衣', '西装', '外套', '上衣', 'T恤', '毛衣', '开衫', '夹克', '制服', '领带', '领结', '围巾', '披肩', '肩', '袖', '乳'];
-    const lowerKeywords = ['丝袜', '内裤', '内裤', '裤子', '短裙', '长裙', '裙子', '裤袜', '连裤', '高跟鞋', '靴子', '拖鞋', '平底', '鞋', '袜', '腿', '腰', '臀'];
-
-    const upper = [];
-    const lower = [];
-
-    for (const p of parts) {
-      let upScore = 0, lowScore = 0;
-      for (const kw of upperKeywords) {
-        if (p.includes(kw)) upScore++;
-      }
-      for (const kw of lowerKeywords) {
-        if (p.includes(kw)) lowScore++;
-      }
+    var parts = val.split('+').map(function(s){return s.trim()}).filter(Boolean);
+    var upperKeywords = ['衬衫','文胸','文胸','胸罩','内衣','西装','外套','上衣','T恤','毛衣','开衫','夹克','制服','领带','领结','围巾','披肩','肩','袖','乳'];
+    var lowerKeywords = ['丝袜','内裤','内裤','裤子','短裙','长裙','裙子','裤袜','连裤','高跟鞋','靴子','拖鞋','平底','鞋','袜','腿','腰','臀'];
+    var upper = [], lower = [];
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i], upScore = 0, lowScore = 0;
+      for (var j = 0; j < upperKeywords.length; j++) { if (p.indexOf(upperKeywords[j]) >= 0) upScore++; }
+      for (var k = 0; k < lowerKeywords.length; k++) { if (p.indexOf(lowerKeywords[k]) >= 0) lowScore++; }
       if (lowScore > upScore) lower.push(p);
       else if (upScore > lowScore) upper.push(p);
-      else {
-        if (p.includes('丝袜') || p.includes('内裤') || p.includes('高跟鞋') || p.includes('裙子') || p.includes('裤子') || p.includes('裤袜')) {
-          lower.push(p);
-        } else if (p.includes('衬衫') || p.includes('文胸') || p.includes('外套') || p.includes('西装') || p.includes('上衣')) {
-          upper.push(p);
-        } else {
-          lower.push(p);
-        }
-      }
+      else { if (p.indexOf('丝袜')>=0||p.indexOf('内裤')>=0||p.indexOf('高跟鞋')>=0||p.indexOf('裙子')>=0||p.indexOf('裤子')>=0||p.indexOf('裤袜')>=0) lower.push(p); else if (p.indexOf('衬衫')>=0||p.indexOf('文胸')>=0||p.indexOf('外套')>=0||p.indexOf('西装')>=0||p.indexOf('上衣')>=0) upper.push(p); else lower.push(p); }
     }
-    return { upper, lower };
+    return { upper: upper, lower: lower };
   }
+
+  function esc(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
   /* ── render ── */
   function render(data) {
-    if (!data || data.length === 0) {
-      cardContainer.innerHTML = '<div class="empty-state"><i class="fa-regular fa-hourglass-half"></i><span>等待变量数据<span class="loading-dots"></span></span></div>';
+    if (!data || !data['郑怡云']) {
+      if (cardContainer.querySelector('.empty-state') === null) {
+        cardContainer.innerHTML = '<div class="empty-state"><i class="fa-regular fa-hourglass-half"></i><span>等待变量数据<span class="loading-dots"></span></span></div>';
+      }
       return;
     }
 
-    const order = ['郑怡云', '陆依依', '蓉阿姨'];
-    const sorted = [];
-    for (const name of order) {
-      const found = data.find(d => d.name === name);
-      if (found) sorted.push(found);
-    }
-    for (const d of data) {
-      if (!order.includes(d.name)) sorted.push(d);
-    }
+    var order = ['郑怡云', '陆依依', '蓉阿姨'];
+    var names = [];
+    for (var i = 0; i < order.length; i++) { if (data[order[i]]) names.push(order[i]); }
+    for (var key in data) { if (key === '时间'||key==='user'||key==='安诺'||key==='家庭'||key==='凌小北'||names.indexOf(key)>=0) continue; names.push(key); }
 
-    let html = '';
-    for (const entry of sorted) {
-      const { name, fields } = entry;
-      const age = fields['年龄'] || '';
-      const hair = fields['发型'] || '';
-      const clothing = fields['穿着状态'] || fields['穿着'] || '';
-      const stage = fields['攻略阶段'] || fields['攻略进度'] || '';
-      const attitude = fields['对user态度'] || fields['态度'] || '';
-      const alertness = fields['警惕程度'] || '';
-      const relation = fields['关系状态'] || fields['关系'] || '';
-      const marriage = fields['婚姻状态'] || fields['婚姻'] || '';
-      const happened = fields['发生过关系'] || '';
+    var html = '';
+    for (var ni = 0; ni < names.length; ni++) {
+      var name = names[ni];
+      var f = data[name] || {};
+      var age = f['年龄'] || '';
+      var hair = f['发型'] || '';
+      var clothing = f['穿着状态'] || f['穿着'] || '';
+      var stage = f['攻略阶段'];
+      var stageNum = stage != null ? Number(stage) : -1;
+      var attitude = f['对user态度'] || f['态度'] || '';
+      var alertness = f['警惕程度'];
+      var relation = f['关系状态'] || f['关系'] || '';
+      var marriage = f['婚姻状态'] || f['婚姻'] || '';
+      var happened = f['发生过关系'];
 
-      const { upper, lower } = splitClothing(clothing);
+      var clothingParts = splitClothing(clothing);
 
-      // stage badge
-      let stageBadge = '';
-      if (stage !== '' && stage !== 'undefined') {
-        const stageNames = { '0': '初识', '1': '熟络', '2': '暧昧', '3': '攻略', '4': '沉沦', '5': '掌控' };
-        const stageLabel = stageNames[stage] || `阶段${stage}`;
-        stageBadge = `<span class="stage-badge"><i class="fa-regular fa-star"></i> ${stageLabel}</span>`;
+      var stageBadge = '';
+      if (stageNum >= 0) {
+        var stageNames = ['初识','熟络','暧昧','攻略','沉沦','掌控'];
+        var sn = Math.min(stageNames.length - 1, Math.floor(stageNum / 40));
+        var stageLabel = stageNames[sn] || ('阶段'+stageNum);
+        stageBadge = '<span class="stage-badge"><i class="fa-regular fa-star"></i> ' + stageLabel + '</span>';
       }
 
-      html += `<div class="char-card">`;
-      html += `<div class="card-header"><span class="char-name"><i class="fa-regular fa-rose"></i>${name}</span>${stageBadge}</div>`;
+      html += '<div class="char-card">';
+      html += '<div class="card-header"><span class="char-name"><i class="fa-regular fa-rose"></i>' + esc(name) + '</span>' + stageBadge + '</div>';
 
-      // tags row
-      html += `<div class="tag-row">`;
-      if (age) html += `<span class="tag"><i class="fa-regular fa-cake"></i><span class="label">年龄</span> ${age}</span>`;
-      if (hair) html += `<span class="tag"><i class="fa-regular fa-palette"></i><span class="label">发型</span> ${hair}</span>`;
-      if (relation) html += `<span class="tag"><i class="fa-regular fa-heart"></i><span class="label">关系</span> ${relation}</span>`;
-      html += `</div>`;
+      html += '<div class="tag-row">';
+      if (age) html += '<span class="tag"><i class="fa-regular fa-cake"></i><span class="label">年龄</span> ' + esc(age) + '</span>';
+      if (hair) html += '<span class="tag"><i class="fa-regular fa-palette"></i><span class="label">发型</span> ' + esc(hair) + '</span>';
+      if (relation) html += '<span class="tag"><i class="fa-regular fa-heart"></i><span class="label">关系</span> ' + esc(relation) + '</span>';
+      html += '</div>';
 
-      // clothing
-      if (upper.length > 0 || lower.length > 0) {
-        html += `<div class="clothing">`;
-        if (upper.length > 0) {
-          html += `<div class="row"><span class="arrow">🔼</span><span class="items">${upper.map(u => `<span class="item">${u}</span>`).join('')}</span></div>`;
+      if (clothingParts.upper.length > 0 || clothingParts.lower.length > 0) {
+        html += '<div class="clothing">';
+        if (clothingParts.upper.length > 0) {
+          html += '<div class="row"><span class="arrow">🔼</span><span class="items">';
+          for (var ui = 0; ui < clothingParts.upper.length; ui++) { html += '<span class="item">' + esc(clothingParts.upper[ui]) + '</span>'; }
+          html += '</span></div>';
         }
-        if (lower.length > 0) {
-          html += `<div class="row"><span class="arrow">🔽</span><span class="items">${lower.map(l => `<span class="item">${l}</span>`).join('')}</span></div>`;
+        if (clothingParts.lower.length > 0) {
+          html += '<div class="row"><span class="arrow">🔽</span><span class="items">';
+          for (var li = 0; li < clothingParts.lower.length; li++) { html += '<span class="item">' + esc(clothingParts.lower[li]) + '</span>'; }
+          html += '</span></div>';
         }
-        html += `</div>`;
+        html += '</div>';
       }
 
-      // extra info
-      const extras = [];
-      if (attitude) extras.push({ icon: 'fa-regular fa-face-smile', text: `态度: ${attitude}` });
-      if (alertness) extras.push({ icon: 'fa-regular fa-shield', text: `警惕: ${alertness}` });
-      if (marriage) extras.push({ icon: 'fa-regular fa-ring', text: `${marriage}` });
-      if (happened && happened !== 'false' && happened !== 'undefined') {
-        extras.push({ icon: 'fa-regular fa-fire', text: happened === 'true' ? '已发生关系' : happened });
-      }
+      var extras = [];
+      if (attitude) extras.push({ icon: 'fa-regular fa-face-smile', text: '态度: ' + attitude });
+      if (alertness != null) extras.push({ icon: 'fa-regular fa-shield', text: '警惕: ' + alertness });
+      if (marriage) extras.push({ icon: 'fa-regular fa-ring', text: marriage });
+      if (happened === true || happened === 'true') { extras.push({ icon: 'fa-regular fa-fire', text: '已发生关系' }); }
+      else if (happened && happened !== 'false') { extras.push({ icon: 'fa-regular fa-fire', text: String(happened) }); }
 
       if (extras.length > 0) {
-        html += `<div class="extra-info">`;
-        for (const ex of extras) {
-          html += `<span class="item"><i class="${ex.icon}"></i>${ex.text}</span>`;
+        html += '<div class="extra-info">';
+        for (var ei = 0; ei < extras.length; ei++) {
+          html += '<span class="item"><i class="' + extras[ei].icon + '"></i>' + esc(extras[ei].text) + '</span>';
         }
-        html += `</div>`;
+        html += '</div>';
       }
 
-      html += `</div>`;
+      html += '</div>';
     }
 
     cardContainer.innerHTML = html;
@@ -435,24 +405,21 @@
   /* ── poll ── */
   function poll() {
     try {
-      const el = document.querySelector('status_current_variables');
-      if (!el) {
+      var data = readLatestData();
+      if (!data) {
         if (cardContainer.querySelector('.empty-state') === null) {
           cardContainer.innerHTML = '<div class="empty-state"><i class="fa-regular fa-hourglass-half"></i><span>等待变量数据<span class="loading-dots"></span></span></div>';
         }
+        prevDataKey = '';
         return;
       }
-      const raw = el.textContent || '';
-      if (raw === prevRaw) return;
-      prevRaw = raw;
-      const data = parseVariables(raw);
+      var key = (data['郑怡云']||{}).key || JSON.stringify(data['郑怡云']);
+      if (key === prevDataKey) return;
+      prevDataKey = key;
       render(data);
-    } catch (e) {
-      console.warn('[母上攻略] status poll error:', e);
-    }
+    } catch(e) { console.warn('[母上攻略] poll error:', e); }
   }
 
-  // initial
   poll();
   setInterval(poll, 1500);
 })();
