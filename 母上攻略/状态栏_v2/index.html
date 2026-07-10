@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>状态栏 · 母上攻略</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 13px; }
+  body {
+    font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: transparent;
+    color: #d4c9c0;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── Scroll container ── */
+  #status-app {
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 10px 10px 16px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(180, 150, 120, 0.25) transparent;
+  }
+  #status-app::-webkit-scrollbar { width: 3px; }
+  #status-app::-webkit-scrollbar-track { background: transparent; }
+  #status-app::-webkit-scrollbar-thumb { background: rgba(180, 150, 120, 0.25); border-radius: 4px; }
+
+  /* ── Header ── */
+  .status-header {
+    text-align: center;
+    padding: 6px 0 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(200, 170, 140, 0.12);
+  }
+  .status-header .time-row {
+    font-size: 0.85rem;
+    font-weight: 300;
+    color: #b8a89a;
+    letter-spacing: 0.5px;
+  }
+  .status-header .time-row i {
+    margin-right: 4px;
+    color: #c9a87c;
+    font-size: 0.75rem;
+  }
+  .status-header .time-row .separator {
+    margin: 0 6px;
+    color: rgba(180, 150, 120, 0.3);
+  }
+  .status-header .title-line {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 500;
+    font-style: italic;
+    color: #e6d3be;
+    letter-spacing: 2px;
+    margin-top: 2px;
+  }
+  .status-header .title-line i {
+    color: #c9a87c;
+    font-size: 0.7rem;
+    margin: 0 6px;
+    opacity: 0.7;
+  }
+
+  /* ── Empty state ── */
+  .empty-state {
+    text-align: center;
+    padding: 40px 16px;
+    color: #8a7a6a;
+    font-weight: 300;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+  }
+  .empty-state i {
+    display: block;
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    color: #6a5a4a;
+    opacity: 0.5;
+  }
+
+  /* ── Card ── */
+  .char-card {
+    background: linear-gradient(135deg, rgba(30, 25, 22, 0.75), rgba(22, 18, 16, 0.85));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 10px;
+    border: 1px solid rgba(200, 170, 140, 0.12);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 8px;
+    padding: 12px 12px 10px;
+    transition: border-color 0.3s;
+  }
+  .char-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(200, 170, 140, 0.08), rgba(180, 120, 80, 0.03));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  .char-card:hover {
+    border-color: rgba(200, 170, 140, 0.25);
+  }
+
+  /* ── Card header ── */
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(200, 170, 140, 0.08);
+  }
+  .card-header .char-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ecdcc9;
+    letter-spacing: 1px;
+  }
+  .card-header .char-name i {
+    color: #c9a87c;
+    font-size: 0.7rem;
+    margin-right: 4px;
+    opacity: 0.7;
+  }
+  .card-header .stage-badge {
+    font-size: 0.65rem;
+    background: linear-gradient(135deg, rgba(200, 170, 140, 0.15), rgba(180, 120, 80, 0.1));
+    border: 1px solid rgba(200, 170, 140, 0.2);
+    border-radius: 20px;
+    padding: 1px 8px;
+    color: #d4bfa8;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  /* ── Tags row ── */
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    margin-bottom: 6px;
+    font-size: 0.7rem;
+    color: #a89888;
+  }
+  .tag-row .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .tag-row .tag i {
+    color: #c9a87c;
+    font-size: 0.6rem;
+    opacity: 0.7;
+    width: 12px;
+    text-align: center;
+  }
+  .tag-row .tag .label {
+    color: #8a7a6a;
+  }
+
+  /* ── Clothing section ── */
+  .clothing {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 0.7rem;
+    line-height: 1.5;
+    color: #c4b4a4;
+  }
+  .clothing .row {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+  .clothing .row .arrow {
+    font-size: 0.65rem;
+    width: 14px;
+    flex-shrink: 0;
+    color: #c9a87c;
+    opacity: 0.7;
+  }
+  .clothing .row .items {
+    flex: 1;
+  }
+  .clothing .row .items .item {
+    display: inline;
+  }
+  .clothing .row .items .item + .item::before {
+    content: ' · ';
+    color: rgba(180, 150, 120, 0.35);
+  }
+
+  /* ── Extra info row ── */
+  .extra-info {
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px solid rgba(200, 170, 140, 0.06);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px 10px;
+    font-size: 0.68rem;
+    color: #948474;
+  }
+  .extra-info .item {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .extra-info .item i {
+    color: #c9a87c;
+    font-size: 0.55rem;
+    opacity: 0.6;
+  }
+
+  /* ── Loading indicator ── */
+  .loading-dots::after {
+    content: '';
+    animation: dots 1.4s steps(4, end) infinite;
+  }
+  @keyframes dots {
+    0%   { content: ''; }
+    25%  { content: '.'; }
+    50%  { content: '..'; }
+    75%  { content: '...'; }
+    100% { content: ''; }
+  }
+</style>
+</head>
+<body>
+<div id="status-app">
+  <div class="status-header">
+    <div class="time-row" id="timeDisplay">
+      <i class="fa-regular fa-calendar"></i>
+      <span id="timeText">--</span>
+    </div>
+    <div class="title-line">
+      <i class="fa-regular fa-flower"></i>
+      母上攻略
+      <i class="fa-regular fa-flower"></i>
+    </div>
+  </div>
+  <div id="cardContainer">
+    <div class="empty-state">
+      <i class="fa-regular fa-hourglass-half"></i>
+      <span>等待变量数据<span class="loading-dots"></span></span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  const WEEK_NAMES = ['日', '一', '二', '三', '四', '五', '六'];
+  const PERIOD_MAP = { 0: '深夜', 1: '凌晨', 2: '凌晨', 3: '凌晨', 4: '清晨', 5: '清晨', 6: '早晨', 7: '早晨', 8: '上午', 9: '上午', 10: '上午', 11: '中午', 12: '中午', 13: '下午', 14: '下午', 15: '下午', 16: '下午', 17: '傍晚', 18: '傍晚', 19: '晚上', 20: '晚上', 21: '晚上', 22: '深夜', 23: '深夜' };
+
+  const app = document.getElementById('status-app');
+  const timeText = document.getElementById('timeText');
+  const cardContainer = document.getElementById('cardContainer');
+
+  let prevRaw = '';
+
+  /* ── time ── */
+  function updateTime() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const w = WEEK_NAMES[d.getDay()];
+    const h = d.getHours();
+    const period = PERIOD_MAP[h] || '';
+    timeText.textContent = `${y}.${m}.${day} 周${w} · ${period}`;
+  }
+  updateTime();
+  setInterval(updateTime, 60000);
+
+  /* ── parser ── */
+  function parseVariables(text) {
+    const lines = text.split('\n').filter(l => l.trim());
+    return lines.map(line => {
+      const trimmed = line.trim();
+      const nameMatch = trimmed.match(/^([\u4e00-\u9fff]{2,4})/);
+      if (!nameMatch) return null;
+      const name = nameMatch[1];
+      const rest = trimmed.slice(name.length).trim();
+      const fieldPairs = rest.split(/\s+/);
+      const fields = {};
+      for (const pair of fieldPairs) {
+        const idx = pair.indexOf(':');
+        if (idx === -1) continue;
+        const key = pair.slice(0, idx).trim();
+        const val = pair.slice(idx + 1).trim();
+        if (key && val) fields[key] = val;
+      }
+      return { name, fields };
+    }).filter(Boolean);
+  }
+
+  /* ── clothing split ── */
+  function splitClothing(val) {
+    if (!val) return { upper: [], lower: [] };
+    const parts = val.split('+').map(s => s.trim()).filter(Boolean);
+
+    const upperKeywords = ['衬衫', '文胸', '文胸', '胸罩', '内衣', '西装', '外套', '上衣', 'T恤', '毛衣', '开衫', '夹克', '制服', '领带', '领结', '围巾', '披肩', '肩', '袖', '乳'];
+    const lowerKeywords = ['丝袜', '内裤', '内裤', '裤子', '短裙', '长裙', '裙子', '裤袜', '连裤', '高跟鞋', '靴子', '拖鞋', '平底', '鞋', '袜', '腿', '腰', '臀'];
+
+    const upper = [];
+    const lower = [];
+
+    for (const p of parts) {
+      let upScore = 0, lowScore = 0;
+      for (const kw of upperKeywords) {
+        if (p.includes(kw)) upScore++;
+      }
+      for (const kw of lowerKeywords) {
+        if (p.includes(kw)) lowScore++;
+      }
+      if (lowScore > upScore) lower.push(p);
+      else if (upScore > lowScore) upper.push(p);
+      else {
+        if (p.includes('丝袜') || p.includes('内裤') || p.includes('高跟鞋') || p.includes('裙子') || p.includes('裤子') || p.includes('裤袜')) {
+          lower.push(p);
+        } else if (p.includes('衬衫') || p.includes('文胸') || p.includes('外套') || p.includes('西装') || p.includes('上衣')) {
+          upper.push(p);
+        } else {
+          lower.push(p);
+        }
+      }
+    }
+    return { upper, lower };
+  }
+
+  /* ── render ── */
+  function render(data) {
+    if (!data || data.length === 0) {
+      cardContainer.innerHTML = '<div class="empty-state"><i class="fa-regular fa-hourglass-half"></i><span>等待变量数据<span class="loading-dots"></span></span></div>';
+      return;
+    }
+
+    const order = ['郑怡云', '陆依依', '蓉阿姨'];
+    const sorted = [];
+    for (const name of order) {
+      const found = data.find(d => d.name === name);
+      if (found) sorted.push(found);
+    }
+    for (const d of data) {
+      if (!order.includes(d.name)) sorted.push(d);
+    }
+
+    let html = '';
+    for (const entry of sorted) {
+      const { name, fields } = entry;
+      const age = fields['年龄'] || '';
+      const hair = fields['发型'] || '';
+      const clothing = fields['穿着状态'] || fields['穿着'] || '';
+      const stage = fields['攻略阶段'] || fields['攻略进度'] || '';
+      const attitude = fields['对user态度'] || fields['态度'] || '';
+      const alertness = fields['警惕程度'] || '';
+      const relation = fields['关系状态'] || fields['关系'] || '';
+      const marriage = fields['婚姻状态'] || fields['婚姻'] || '';
+      const happened = fields['发生过关系'] || '';
+
+      const { upper, lower } = splitClothing(clothing);
+
+      // stage badge
+      let stageBadge = '';
+      if (stage !== '' && stage !== 'undefined') {
+        const stageNames = { '0': '初识', '1': '熟络', '2': '暧昧', '3': '攻略', '4': '沉沦', '5': '掌控' };
+        const stageLabel = stageNames[stage] || `阶段${stage}`;
+        stageBadge = `<span class="stage-badge"><i class="fa-regular fa-star"></i> ${stageLabel}</span>`;
+      }
+
+      html += `<div class="char-card">`;
+      html += `<div class="card-header"><span class="char-name"><i class="fa-regular fa-rose"></i>${name}</span>${stageBadge}</div>`;
+
+      // tags row
+      html += `<div class="tag-row">`;
+      if (age) html += `<span class="tag"><i class="fa-regular fa-cake"></i><span class="label">年龄</span> ${age}</span>`;
+      if (hair) html += `<span class="tag"><i class="fa-regular fa-palette"></i><span class="label">发型</span> ${hair}</span>`;
+      if (relation) html += `<span class="tag"><i class="fa-regular fa-heart"></i><span class="label">关系</span> ${relation}</span>`;
+      html += `</div>`;
+
+      // clothing
+      if (upper.length > 0 || lower.length > 0) {
+        html += `<div class="clothing">`;
+        if (upper.length > 0) {
+          html += `<div class="row"><span class="arrow">🔼</span><span class="items">${upper.map(u => `<span class="item">${u}</span>`).join('')}</span></div>`;
+        }
+        if (lower.length > 0) {
+          html += `<div class="row"><span class="arrow">🔽</span><span class="items">${lower.map(l => `<span class="item">${l}</span>`).join('')}</span></div>`;
+        }
+        html += `</div>`;
+      }
+
+      // extra info
+      const extras = [];
+      if (attitude) extras.push({ icon: 'fa-regular fa-face-smile', text: `态度: ${attitude}` });
+      if (alertness) extras.push({ icon: 'fa-regular fa-shield', text: `警惕: ${alertness}` });
+      if (marriage) extras.push({ icon: 'fa-regular fa-ring', text: `${marriage}` });
+      if (happened && happened !== 'false' && happened !== 'undefined') {
+        extras.push({ icon: 'fa-regular fa-fire', text: happened === 'true' ? '已发生关系' : happened });
+      }
+
+      if (extras.length > 0) {
+        html += `<div class="extra-info">`;
+        for (const ex of extras) {
+          html += `<span class="item"><i class="${ex.icon}"></i>${ex.text}</span>`;
+        }
+        html += `</div>`;
+      }
+
+      html += `</div>`;
+    }
+
+    cardContainer.innerHTML = html;
+  }
+
+  /* ── poll ── */
+  function poll() {
+    try {
+      const el = document.querySelector('status_current_variables');
+      if (!el) {
+        if (cardContainer.querySelector('.empty-state') === null) {
+          cardContainer.innerHTML = '<div class="empty-state"><i class="fa-regular fa-hourglass-half"></i><span>等待变量数据<span class="loading-dots"></span></span></div>';
+        }
+        return;
+      }
+      const raw = el.textContent || '';
+      if (raw === prevRaw) return;
+      prevRaw = raw;
+      const data = parseVariables(raw);
+      render(data);
+    } catch (e) {
+      console.warn('[母上攻略] status poll error:', e);
+    }
+  }
+
+  // initial
+  poll();
+  setInterval(poll, 1500);
+})();
+</script>
+</body>
+</html>
