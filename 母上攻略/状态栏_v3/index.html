@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>状态栏 · 母上攻略</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 13px; }
+  body {
+    font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: transparent;
+    color: #d4c9c0;
+  }
+
+  /* ── Scroll container ── */
+  #status-app {
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 10px 10px 16px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(180, 150, 120, 0.25) transparent;
+  }
+  #status-app::-webkit-scrollbar { width: 3px; }
+  #status-app::-webkit-scrollbar-track { background: transparent; }
+  #status-app::-webkit-scrollbar-thumb { background: rgba(180, 150, 120, 0.25); border-radius: 4px; }
+
+  /* ── Header ── */
+  .status-header {
+    text-align: center;
+    padding: 6px 0 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(200, 170, 140, 0.12);
+  }
+  .status-header .time-row {
+    font-size: 0.85rem;
+    font-weight: 300;
+    color: #b8a89a;
+    letter-spacing: 0.5px;
+  }
+  .status-header .time-row i {
+    margin-right: 4px;
+    color: #c9a87c;
+    font-size: 0.75rem;
+  }
+  .status-header .time-row .separator {
+    margin: 0 6px;
+    color: rgba(180, 150, 120, 0.3);
+  }
+  .status-header .title-line {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 500;
+    font-style: italic;
+    color: #e6d3be;
+    letter-spacing: 2px;
+    margin-top: 2px;
+  }
+  .status-header .title-line i {
+    color: #c9a87c;
+    font-size: 0.7rem;
+    margin: 0 6px;
+    opacity: 0.7;
+  }
+
+  /* ── Empty state ── */
+  .empty-state {
+    text-align: center;
+    padding: 40px 16px;
+    color: #8a7a6a;
+    font-weight: 300;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+  }
+  .empty-state i {
+    display: block;
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    color: #6a5a4a;
+    opacity: 0.5;
+  }
+
+  /* ── Card ── */
+  .char-card {
+    background: linear-gradient(135deg, rgba(30, 25, 22, 0.75), rgba(22, 18, 16, 0.85));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 10px;
+    border: 1px solid rgba(200, 170, 140, 0.12);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 8px;
+    padding: 12px 12px 10px;
+    transition: border-color 0.3s;
+  }
+  .char-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(200, 170, 140, 0.08), rgba(180, 120, 80, 0.03));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  .char-card:hover {
+    border-color: rgba(200, 170, 140, 0.25);
+  }
+
+  /* ── Card header ── */
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(200, 170, 140, 0.08);
+  }
+  .card-header .char-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ecdcc9;
+    letter-spacing: 1px;
+  }
+  .card-header .char-name i {
+    color: #c9a87c;
+    font-size: 0.7rem;
+    margin-right: 4px;
+    opacity: 0.7;
+  }
+  .card-header .stage-badge {
+    font-size: 0.65rem;
+    background: linear-gradient(135deg, rgba(200, 170, 140, 0.15), rgba(180, 120, 80, 0.1));
+    border: 1px solid rgba(200, 170, 140, 0.2);
+    border-radius: 20px;
+    padding: 1px 8px;
+    color: #d4bfa8;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  /* ── Tags row ── */
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    margin-bottom: 6px;
+    font-size: 0.7rem;
+    color: #a89888;
+  }
+  .tag-row .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .tag-row .tag i {
+    color: #c9a87c;
+    font-size: 0.6rem;
+    opacity: 0.7;
+    width: 12px;
+    text-align: center;
+  }
+  .tag-row .tag .label {
+    color: #8a7a6a;
+  }
+
+  /* ── Clothing section ── */
+  .clothing {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 0.7rem;
+    line-height: 1.5;
+    color: #c4b4a4;
+  }
+  .clothing .row {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+  .clothing .row .arrow {
+    font-size: 0.65rem;
+    width: 14px;
+    flex-shrink: 0;
+    color: #c9a87c;
+    opacity: 0.7;
+  }
+  .clothing .row .items {
+    flex: 1;
+  }
+  .clothing .row .items .item {
+    display: inline;
+  }
+  .clothing .row .items .item + .item::before {
+    content: ' · ';
+    color: rgba(180, 150, 120, 0.35);
+  }
+
+  /* ── Extra info row ── */
+  .extra-info {
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px solid rgba(200, 170, 140, 0.06);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px 10px;
+    font-size: 0.68rem;
+    color: #948474;
+  }
+  .extra-info .item {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .extra-info .item i {
+    color: #c9a87c;
+    font-size: 0.55rem;
+    opacity: 0.6;
+  }
+
+  /* ── Loading indicator ── */
+  .loading-dots::after {
+    content: '';
+    animation: dots 1.4s steps(4, end) infinite;
+  }
+  @keyframes dots {
+    0%   { content: ''; }
+    25%  { content: '.'; }
+    50%  { content: '..'; }
+    75%  { content: '...'; }
+    100% { content: ''; }
+  }
+</style>
+</head>
+<body>
+<div id="status-app">
+  <div class="status-header">
+    <div class="time-row" id="timeDisplay">
+      <i class="fa-regular fa-calendar"></i>
+      <span id="timeText">--</span>
+    </div>
+    <div class="title-line">
+      <i class="fa-regular fa-flower"></i>
+      母上攻略
+      <i class="fa-regular fa-flower"></i>
+    </div>
+  </div>
+  <div id="cardContainer">
+    <div class="empty-state">
+      <i class="fa-regular fa-hourglass-half"></i>
+      <span>等待变量数据<span class="loading-dots"></span></span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  var WEEK_NAMES = ['日', '一', '二', '三', '四', '五', '六'];
+  var PERIOD_MAP = { 0: '深夜', 1: '凌晨', 2: '凌晨', 3: '凌晨', 4: '清晨', 5: '清晨', 6: '早晨', 7: '早晨', 8: '上午', 9: '上午', 10: '上午', 11: '中午', 12: '中午', 13: '下午', 14: '下午', 15: '下午', 16: '下午', 17: '傍晚', 18: '傍晚', 19: '晚上', 20: '晚上', 21: '晚上', 22: '深夜', 23: '深夜' };
+
+  var cardContainer = document.getElementById('cardContainer');
+  var timeText = document.getElementById('timeText');
+
+  var prevDataKey = '';
+  var initialized = false;
+
+  function showState(state) {
+    if (state === 'loading') {
+      cardContainer.innerHTML = '<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><span>MVU 引擎就绪中<span class="loading-dots"></span></span></div>';
+    } else if (state === 'empty') {
+      cardContainer.innerHTML = '<div class="empty-state"><i class="fa-regular fa-hourglass-half"></i><span>等待变量数据<span class="loading-dots"></span></span></div>';
+    }
+  }
+
+  /* ── time ── */
+  function updateTime() {
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    var w = WEEK_NAMES[d.getDay()];
+    var h = d.getHours();
+    var period = PERIOD_MAP[h] || '';
+    timeText.textContent = y + '.' + m + '.' + day + ' 周' + w + ' \u00B7 ' + period;
+  }
+  updateTime();
+  setInterval(updateTime, 60000);
+
+  /* ── read latest MVU data via API ── */
+  function extractStatData(v) {
+    if (!v) return null;
+    if (v.stat_data && typeof v.stat_data === 'object') return v.stat_data;
+    return null;
+  }
+
+  function getMsgId() {
+    try { if (typeof getCurrentMessageId === 'function') return getCurrentMessageId(); } catch(e) {}
+    return 'latest';
+  }
+
+  function readLatestData() {
+    var msgId = getMsgId();
+    try { var d = window.getVariables({type:'message', message_id: msgId}); var sd = extractStatData(d); if (sd && sd['郑怡云']) return sd; } catch(e) {}
+    try { var mv = window.Mvu; if (mv && mv.getMvuData) { var d2 = mv.getMvuData({type:'message', message_id: msgId}); var sd2 = extractStatData(d2); if (sd2 && sd2['郑怡云']) return sd2; } } catch(e) {}
+    try { var all = window.getAllVariables ? window.getAllVariables() : null; var sd3 = extractStatData(all); if (sd3 && sd3['郑怡云']) return sd3; } catch(e) {}
+    return null;
+  }
+
+  /* ── clothing split ── */
+  function splitClothing(val) {
+    if (!val) return { upper: [], lower: [] };
+    var parts = val.split('+').map(function(s){return s.trim()}).filter(Boolean);
+    var upperKeywords = ['衬衫','文胸','文胸','胸罩','内衣','西装','外套','上衣','T恤','毛衣','开衫','夹克','制服','领带','领结','围巾','披肩','肩','袖','乳'];
+    var lowerKeywords = ['丝袜','内裤','内裤','裤子','短裙','长裙','裙子','裤袜','连裤','高跟鞋','靴子','拖鞋','平底','鞋','袜','腿','腰','臀'];
+    var upper = [], lower = [];
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i], upScore = 0, lowScore = 0;
+      for (var j = 0; j < upperKeywords.length; j++) { if (p.indexOf(upperKeywords[j]) >= 0) upScore++; }
+      for (var k = 0; k < lowerKeywords.length; k++) { if (p.indexOf(lowerKeywords[k]) >= 0) lowScore++; }
+      if (lowScore > upScore) lower.push(p);
+      else if (upScore > lowScore) upper.push(p);
+      else { if (p.indexOf('丝袜')>=0||p.indexOf('内裤')>=0||p.indexOf('高跟鞋')>=0||p.indexOf('裙子')>=0||p.indexOf('裤子')>=0||p.indexOf('裤袜')>=0) lower.push(p); else if (p.indexOf('衬衫')>=0||p.indexOf('文胸')>=0||p.indexOf('外套')>=0||p.indexOf('西装')>=0||p.indexOf('上衣')>=0) upper.push(p); else lower.push(p); }
+    }
+    return { upper: upper, lower: lower };
+  }
+
+  function esc(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  /* ── render ── */
+  function render(data) {
+    var order = ['郑怡云', '陆依依', '蓉阿姨'];
+    var names = [];
+    for (var i = 0; i < order.length; i++) { if (data[order[i]]) names.push(order[i]); }
+    for (var key in data) { if (key === '时间'||key==='user'||key==='安诺'||key==='家庭'||key==='凌小北'||names.indexOf(key)>=0) continue; names.push(key); }
+
+    var html = '';
+    for (var ni = 0; ni < names.length; ni++) {
+      var name = names[ni];
+      var f = data[name] || {};
+      var age = f['年龄'] || '';
+      var hair = f['发型'] || '';
+      var clothing = f['穿着状态'] || f['穿着'] || '';
+      var stage = f['攻略阶段'];
+      var stageNum = stage != null ? Number(stage) : -1;
+      var attitude = f['对user态度'] || f['态度'] || '';
+      var alertness = f['警惕程度'];
+      var relation = f['关系状态'] || f['关系'] || '';
+      var marriage = f['婚姻状态'] || f['婚姻'] || '';
+      var happened = f['发生过关系'];
+
+      var clothingParts = splitClothing(clothing);
+
+      var stageBadge = '';
+      if (stageNum >= 0) {
+        var stageNames = ['初识','熟络','暧昧','攻略','沉沦','掌控'];
+        var sn = Math.min(stageNames.length - 1, Math.floor(stageNum / 40));
+        var stageLabel = stageNames[sn] || ('阶段'+stageNum);
+        stageBadge = '<span class="stage-badge"><i class="fa-regular fa-star"></i> ' + stageLabel + '</span>';
+      }
+
+      html += '<div class="char-card">';
+      html += '<div class="card-header"><span class="char-name"><i class="fa-regular fa-rose"></i>' + esc(name) + '</span>' + stageBadge + '</div>';
+
+      html += '<div class="tag-row">';
+      if (age) html += '<span class="tag"><i class="fa-regular fa-cake"></i><span class="label">年龄</span> ' + esc(age) + '</span>';
+      if (hair) html += '<span class="tag"><i class="fa-regular fa-palette"></i><span class="label">发型</span> ' + esc(hair) + '</span>';
+      if (relation) html += '<span class="tag"><i class="fa-regular fa-heart"></i><span class="label">关系</span> ' + esc(relation) + '</span>';
+      html += '</div>';
+
+      if (clothingParts.upper.length > 0 || clothingParts.lower.length > 0) {
+        html += '<div class="clothing">';
+        if (clothingParts.upper.length > 0) {
+          html += '<div class="row"><span class="arrow">🔼</span><span class="items">';
+          for (var ui = 0; ui < clothingParts.upper.length; ui++) { html += '<span class="item">' + esc(clothingParts.upper[ui]) + '</span>'; }
+          html += '</span></div>';
+        }
+        if (clothingParts.lower.length > 0) {
+          html += '<div class="row"><span class="arrow">🔽</span><span class="items">';
+          for (var li = 0; li < clothingParts.lower.length; li++) { html += '<span class="item">' + esc(clothingParts.lower[li]) + '</span>'; }
+          html += '</span></div>';
+        }
+        html += '</div>';
+      }
+
+      var extras = [];
+      if (attitude) extras.push({ icon: 'fa-regular fa-face-smile', text: '态度: ' + attitude });
+      if (alertness != null) extras.push({ icon: 'fa-regular fa-shield', text: '警惕: ' + alertness });
+      if (marriage) extras.push({ icon: 'fa-regular fa-ring', text: marriage });
+      if (happened === true || happened === 'true') { extras.push({ icon: 'fa-regular fa-fire', text: '已发生关系' }); }
+      else if (happened && happened !== 'false') { extras.push({ icon: 'fa-regular fa-fire', text: String(happened) }); }
+
+      if (extras.length > 0) {
+        html += '<div class="extra-info">';
+        for (var ei = 0; ei < extras.length; ei++) {
+          html += '<span class="item"><i class="' + extras[ei].icon + '"></i>' + esc(extras[ei].text) + '</span>';
+        }
+        html += '</div>';
+      }
+
+      html += '</div>';
+    }
+
+    cardContainer.innerHTML = html;
+  }
+
+  /* ── poll ── */
+  function poll() {
+    try {
+      var data = readLatestData();
+      if (!data) {
+        if (!initialized) { showState('loading'); return; }
+        showState('empty');
+        prevDataKey = '';
+        return;
+      }
+      initialized = true;
+      var key = JSON.stringify(data['郑怡云']);
+      if (key === prevDataKey) return;
+      prevDataKey = key;
+      render(data);
+    } catch(e) { console.warn('[母上攻略] poll error:', e); }
+  }
+
+  /* ── init ── */
+  function init() {
+    showState('loading');
+    try { if (typeof waitGlobalInitialized === 'function') { waitGlobalInitialized('Mvu').then(function(){ initialized=true; poll(); }); return; } } catch(e) {}
+    poll();
+  }
+  try {
+    if (window.Mvu && window.Mvu.events && window.Mvu.events.VARIABLE_UPDATE_ENDED && typeof window.eventOn === 'function') {
+      window.eventOn(window.Mvu.events.VARIABLE_UPDATE_ENDED, function() { if(initialized){prevDataKey='';poll();} });
+    }
+  } catch(e) {}
+  init();
+  setInterval(poll, 3000);
+})();
+</script>
+</body>
+</html>
