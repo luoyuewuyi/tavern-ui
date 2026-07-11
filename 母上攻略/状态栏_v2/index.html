@@ -16,8 +16,6 @@
     font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
     background: transparent;
     color: #d4c9c0;
-    min-height: 100vh;
-    overflow: hidden;
   }
 
   /* ── Scroll container ── */
@@ -268,13 +266,22 @@
 (function() {
   'use strict';
 
-  const WEEK_NAMES = ['日', '一', '二', '三', '四', '五', '六'];
-  const PERIOD_MAP = { 0: '深夜', 1: '凌晨', 2: '凌晨', 3: '凌晨', 4: '清晨', 5: '清晨', 6: '早晨', 7: '早晨', 8: '上午', 9: '上午', 10: '上午', 11: '中午', 12: '中午', 13: '下午', 14: '下午', 15: '下午', 16: '下午', 17: '傍晚', 18: '傍晚', 19: '晚上', 20: '晚上', 21: '晚上', 22: '深夜', 23: '深夜' };
+  var WEEK_NAMES = ['日', '一', '二', '三', '四', '五', '六'];
+  var PERIOD_MAP = { 0: '深夜', 1: '凌晨', 2: '凌晨', 3: '凌晨', 4: '清晨', 5: '清晨', 6: '早晨', 7: '早晨', 8: '上午', 9: '上午', 10: '上午', 11: '中午', 12: '中午', 13: '下午', 14: '下午', 15: '下午', 16: '下午', 17: '傍晚', 18: '傍晚', 19: '晚上', 20: '晚上', 21: '晚上', 22: '深夜', 23: '深夜' };
 
-  const cardContainer = document.getElementById('cardContainer');
-  const timeText = document.getElementById('timeText');
+  var cardContainer = document.getElementById('cardContainer');
+  var timeText = document.getElementById('timeText');
 
-  let prevDataKey = '';
+  var prevDataKey = '';
+  var initialized = false;
+
+  function showState(state) {
+    if (state === 'loading') {
+      cardContainer.innerHTML = '<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><span>MVU 引擎就绪中<span class="loading-dots"></span></span></div>';
+    } else if (state === 'empty') {
+      cardContainer.innerHTML = '<div class="empty-state"><i class="fa-regular fa-hourglass-half"></i><span>等待变量数据<span class="loading-dots"></span></span></div>';
+    }
+  }
 
   /* ── time ── */
   function updateTime() {
@@ -296,17 +303,19 @@
     if (v.stat_data && typeof v.stat_data === 'object') return v.stat_data;
     return null;
   }
+
+  function getMsgId() {
+    try { if (typeof getCurrentMessageId === 'function') return getCurrentMessageId(); } catch(e) {}
+    return 'latest';
+  }
+
   function readLatestData() {
-    try { var d = window.getVariables({type:'message'}); var sd = extractStatData(d); if (sd && sd['郑怡云']) return sd; } catch(e) {}
-    try { var mv = window.Mvu; if (mv && mv.getMvuData) { var d2 = mv.getMvuData({type:'message', message_id:-1}); var sd2 = extractStatData(d2); if (sd2 && sd2['郑怡云']) return sd2; } } catch(e) {}
+    var msgId = getMsgId();
+    try { var d = window.getVariables({type:'message', message_id: msgId}); var sd = extractStatData(d); if (sd && sd['郑怡云']) return sd; } catch(e) {}
+    try { var mv = window.Mvu; if (mv && mv.getMvuData) { var d2 = mv.getMvuData({type:'message', message_id: msgId}); var sd2 = extractStatData(d2); if (sd2 && sd2['郑怡云']) return sd2; } } catch(e) {}
     try { var all = window.getAllVariables ? window.getAllVariables() : null; var sd3 = extractStatData(all); if (sd3 && sd3['郑怡云']) return sd3; } catch(e) {}
     return null;
   }
-  try {
-    if (window.Mvu && window.Mvu.events && window.Mvu.events.VARIABLE_UPDATE_ENDED && typeof window.eventOn === 'function') {
-      window.eventOn(window.Mvu.events.VARIABLE_UPDATE_ENDED, function() { prevDataKey = ''; poll(); });
-    }
-  } catch(e) {}
 
   /* ── clothing split ── */
   function splitClothing(val) {
@@ -330,13 +339,6 @@
 
   /* ── render ── */
   function render(data) {
-    if (!data || !data['郑怡云']) {
-      if (cardContainer.querySelector('.empty-state') === null) {
-        cardContainer.innerHTML = '<div class="empty-state"><i class="fa-regular fa-hourglass-half"></i><span>等待变量数据<span class="loading-dots"></span></span></div>';
-      }
-      return;
-    }
-
     var order = ['郑怡云', '陆依依', '蓉阿姨'];
     var names = [];
     for (var i = 0; i < order.length; i++) { if (data[order[i]]) names.push(order[i]); }
@@ -417,21 +419,32 @@
     try {
       var data = readLatestData();
       if (!data) {
-        if (cardContainer.querySelector('.empty-state') === null) {
-          cardContainer.innerHTML = '<div class="empty-state"><i class="fa-regular fa-hourglass-half"></i><span>等待变量数据<span class="loading-dots"></span></span></div>';
-        }
+        if (!initialized) { showState('loading'); return; }
+        showState('empty');
         prevDataKey = '';
         return;
       }
-      var key = (data['郑怡云']||{}).key || JSON.stringify(data['郑怡云']);
+      initialized = true;
+      var key = JSON.stringify(data['郑怡云']);
       if (key === prevDataKey) return;
       prevDataKey = key;
       render(data);
     } catch(e) { console.warn('[母上攻略] poll error:', e); }
   }
 
-  poll();
-  setInterval(poll, 1500);
+  /* ── init ── */
+  function init() {
+    showState('loading');
+    try { if (typeof waitGlobalInitialized === 'function') { waitGlobalInitialized('Mvu').then(function(){ initialized=true; poll(); }); return; } } catch(e) {}
+    poll();
+  }
+  try {
+    if (window.Mvu && window.Mvu.events && window.Mvu.events.VARIABLE_UPDATE_ENDED && typeof window.eventOn === 'function') {
+      window.eventOn(window.Mvu.events.VARIABLE_UPDATE_ENDED, function() { if(initialized){prevDataKey='';poll();} });
+    }
+  } catch(e) {}
+  init();
+  setInterval(poll, 3000);
 })();
 </script>
 </body>
