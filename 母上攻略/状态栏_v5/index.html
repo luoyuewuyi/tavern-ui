@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>状态栏 · 母上攻略</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+/* ============================================================
+   MODULE: Variables & Reset
+   ============================================================ */
+:root {
+  --bg-body: transparent;
+  --bg-card: linear-gradient(135deg, rgba(28,22,18,0.82), rgba(18,14,10,0.88));
+  --bg-card-hover: linear-gradient(135deg, rgba(32,26,20,0.85), rgba(22,18,12,0.9));
+  --border-card: rgba(200,170,140,0.13);
+  --border-card-hover: rgba(210,180,150,0.25);
+  --border-hairline: rgba(200,170,140,0.07);
+  --color-text: #d4c9c0;
+  --color-dim: #9a8a7a;
+  --color-accent: #c9a87c;
+  --color-accent-soft: #b8976b;
+  --color-name: #e8d8c4;
+  --color-badge: #d4bfa8;
+  --color-badge-bg: linear-gradient(135deg, rgba(200,170,140,0.15), rgba(180,120,80,0.08));
+  --color-badge-border: rgba(200,170,140,0.2);
+  --radius: 10px;
+  --gap: 8px;
+  --font-mono: 'Playfair Display', serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 13px; }
+body {
+  font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-body);
+  color: var(--color-text);
+}
+
+/* ============================================================
+   MODULE: Container & Scroll
+   ============================================================ */
+#status-app {
+  max-height: 100vh;
+  overflow-y: auto;
+  padding: 10px 8px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180,150,120,0.22) transparent;
+}
+#status-app::-webkit-scrollbar { width: 3px; }
+#status-app::-webkit-scrollbar-track { background: transparent; }
+#status-app::-webkit-scrollbar-thumb { background: rgba(180,150,120,0.22); border-radius: 4px; }
+
+/* ============================================================
+   MODULE: Header
+   ============================================================ */
+.status-header {
+  text-align: center;
+  padding: 4px 0 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+.status-header .time-row {
+  font-size: 0.84rem;
+  font-weight: 300;
+  color: #b8a89a;
+  letter-spacing: 0.5px;
+}
+.status-header .time-row i {
+  margin-right: 4px;
+  color: var(--color-accent);
+  font-size: 0.72rem;
+}
+.status-header .title-line {
+  font-family: var(--font-mono);
+  font-size: 0.97rem;
+  font-weight: 500;
+  font-style: italic;
+  color: #e6d3be;
+  letter-spacing: 2px;
+  margin-top: 3px;
+}
+.status-header .title-line i {
+  color: var(--color-accent);
+  font-size: 0.66rem;
+  margin: 0 6px;
+  opacity: 0.7;
+}
+
+/* ============================================================
+   MODULE: States (loading / empty)
+   ============================================================ */
+.empty-state {
+  text-align: center;
+  padding: 40px 16px;
+  color: #8a7a6a;
+  font-weight: 300;
+  font-size: 0.88rem;
+  letter-spacing: 1px;
+}
+.empty-state i {
+  display: block;
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+  color: #6a5a4a;
+  opacity: 0.45;
+}
+@keyframes dots {
+  0%,100% { content: ''; }
+  25% { content: '.'; }
+  50% { content: '..'; }
+  75% { content: '...'; }
+}
+.loading-dots::after { content: ''; animation: dots 1.4s steps(4,end) infinite; }
+
+/* ============================================================
+   MODULE: Character Card
+   ============================================================ */
+.char-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-card);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: var(--gap);
+  padding: 12px 12px 10px;
+  transition: border-color 0.3s, background 0.3s;
+}
+.char-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-card-hover);
+}
+.char-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(200,170,140,0.07), rgba(180,120,80,0.02));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 7px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+.card-header .char-name {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-name);
+  letter-spacing: 1px;
+}
+.card-header .char-name i {
+  color: var(--color-accent);
+  font-size: 0.68rem;
+  margin-right: 5px;
+  opacity: 0.7;
+}
+.card-header .stage-badge {
+  font-size: 0.64rem;
+  background: var(--color-badge-bg);
+  border: 1px solid var(--color-badge-border);
+  border-radius: 20px;
+  padding: 1px 9px;
+  color: var(--color-badge);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   MODULE: Meta Tags (age / hair / relation)
+   ============================================================ */
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-bottom: 7px;
+  font-size: 0.72rem;
+  color: #a89888;
+}
+.tag-row .tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.tag-row .tag i {
+  color: var(--color-accent);
+  font-size: 0.6rem;
+  opacity: 0.65;
+  width: 12px;
+  text-align: center;
+}
+.tag-row .tag .label {
+  color: var(--color-dim);
+  font-size: 0.68rem;
+}
+
+/* ============================================================
+   MODULE: Clothing Display
+   ============================================================ */
+.clothing {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: #c4b4a4;
+}
+.clothing .row {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.clothing .row .arrow {
+  font-size: 0.64rem;
+  width: 14px;
+  flex-shrink: 0;
+  color: var(--color-accent);
+  opacity: 0.7;
+}
+.clothing .row .items { flex: 1; }
+.clothing .row .items .item { display: inline; }
+.clothing .row .items .item + .item::before {
+  content: ' + ';
+  color: rgba(180,150,120,0.35);
+  font-size: 0.62rem;
+}
+
+/* ============================================================
+   MODULE: Extra Info Row (attitude / alertness / marriage)
+   ============================================================ */
+.extra-info {
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid var(--border-hairline);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 12px;
+  font-size: 0.68rem;
+  color: #948474;
+}
+.extra-info .item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.extra-info .item i {
+  color: var(--color-accent-soft);
+  font-size: 0.55rem;
+  opacity: 0.55;
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     MODULE: HTML Shell
+     ============================================================ -->
+<div id="status-app">
+  <div class="status-header">
+    <div class="time-row">
+      <i class="fa-regular fa-calendar"></i>
+      <span id="timeText">--</span>
+    </div>
+    <div class="title-line">
+      <i class="fa-regular fa-flower"></i>
+      母上攻略
+      <i class="fa-regular fa-flower"></i>
+    </div>
+  </div>
+  <div id="cardContainer">
+    <div class="empty-state">
+      <i class="fa-solid fa-spinner fa-spin"></i>
+      <span>MVU 引擎就绪中<span class="loading-dots"></span></span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ============================================================
+     MODULE: Lifecycle — DOM refs & state
+     ============================================================ */
+  var cardContainer = document.getElementById('cardContainer');
+  var timeText = document.getElementById('timeText');
+  var prevKey = '';
+  var ready = false;
+  var pollTimer = null;
+
+  var WEEK = ['日','一','二','三','四','五','六'];
+  var PERIOD = ['深夜','凌晨','凌晨','凌晨','清晨','清晨','早晨','早晨','上午','上午','上午','中午','中午','下午','下午','下午','下午','傍晚','傍晚','晚上','晚上','晚上','深夜'];
+
+  function showState(s) {
+    if (s === 'loading') {
+      cardContainer.innerHTML = '<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><span>MVU 引擎就绪中<span class="loading-dots"></span></span></div>';
+    } else if (s === 'empty') {
+      cardContainer.innerHTML = '<div class="empty-state"><i class="fa-regular fa-hourglass-half"></i><span>等待变量数据<span class="loading-dots"></span></span></div>';
+    }
+  }
+
+  /* ============================================================
+     MODULE: Time Display
+     ============================================================ */
+  function updateTime() {
+    var d = new Date();
+    timeText.textContent = d.getFullYear()+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+String(d.getDate()).padStart(2,'0')+' 周'+WEEK[d.getDay()]+' · '+PERIOD[d.getHours()];
+  }
+  updateTime();
+  setInterval(updateTime, 60000);
+
+  /* ============================================================
+     MODULE: Data — MVU read layer
+     ============================================================ */
+  function extractStatData(v) {
+    if (!v) return null;
+    if (v.stat_data && typeof v.stat_data === 'object') return v.stat_data;
+    return null;
+  }
+
+  function readLatestData() {
+    try { var a = window.getAllVariables ? window.getAllVariables() : null; var sd = extractStatData(a); if (sd && sd['\u90d1\u6021\u4e91']) return sd; } catch(e) {}
+    try { var d = window.getVariables({type:'message'}); var sd2 = extractStatData(d); if (sd2 && sd2['\u90d1\u6021\u4e91']) return sd2; } catch(e) {}
+    try { var mv = window.Mvu; if (mv && mv.getMvuData) { var d3 = mv.getMvuData({type:'message', message_id:-1}); var sd3 = extractStatData(d3); if (sd3 && sd3['\u90d1\u6021\u4e91']) return sd3; } } catch(e) {}
+    return null;
+  }
+
+  /* ============================================================
+     MODULE: Utility
+     ============================================================ */
+  function esc(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  /* ============================================================
+     MODULE: Clothing Parser
+     ============================================================ */
+  var UP_KW = ['衬衫','文胸','文胸','胸罩','内衣','西装','外套','上衣','T恤','毛衣','开衫','夹克','制服','领带','领结','围巾','披肩','肩','袖','乳'];
+  var LO_KW = ['丝袜','内裤','内裤','裤子','短裙','长裙','裙子','裤袜','连裤','高跟鞋','靴子','拖鞋','平底','鞋','袜','腿','腰','臀'];
+
+  function splitClothing(val) {
+    if (!val) return { upper: [], lower: [] };
+    var parts = val.split('+').map(function(s){return s.trim()}).filter(Boolean);
+    var up = [], lo = [];
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i], us = 0, ls = 0;
+      for (var j = 0; j < UP_KW.length; j++) { if (p.indexOf(UP_KW[j]) >= 0) us++; }
+      for (var k = 0; k < LO_KW.length; k++) { if (p.indexOf(LO_KW[k]) >= 0) ls++; }
+      if (ls > us) lo.push(p);
+      else if (us > ls) up.push(p);
+      else { if (p.indexOf('丝袜')>=0||p.indexOf('内裤')>=0||p.indexOf('高跟鞋')>=0||p.indexOf('裙子')>=0||p.indexOf('裤子')>=0||p.indexOf('裤袜')>=0) lo.push(p); else if (p.indexOf('衬衫')>=0||p.indexOf('文胸')>=0||p.indexOf('外套')>=0||p.indexOf('西装')>=0||p.indexOf('上衣')>=0) up.push(p); else lo.push(p); }
+    }
+    return { upper: up, lower: lo };
+  }
+
+  /* ============================================================
+     MODULE: Card Renderer — single character card
+     ============================================================ */
+  var STAGE_NAMES = ['初识','熟络','暧昧','攻略','沉沦','掌控'];
+
+  function renderCard(name, fields) {
+    var age = fields['\u5e74\u9f84'] || '';
+    var hair = fields['\u53d1\u578b'] || '';
+    var clothing = fields['\u7a7f\u7740\u72b6\u6001'] || fields['\u7a7f\u7740'] || '';
+    var stage = fields['\u653b\u7565\u9636\u6bb5'];
+    var stageNum = stage != null ? Number(stage) : -1;
+    var attitude = fields['\u5bf9user\u6001\u5ea6'] || fields['\u6001\u5ea6'] || '';
+    var alertness = fields['\u8b66\u60d5\u7a0b\u5ea6'];
+    var relation = fields['\u5173\u7cfb\u72b6\u6001'] || fields['\u5173\u7cfb'] || '';
+    var marriage = fields['\u5a5a\u59fb\u72b6\u6001'] || fields['\u5a5a\u59fb'] || '';
+    var happened = fields['\u53d1\u751f\u8fc7\u5173\u7cfb'];
+
+    var cp = splitClothing(clothing);
+
+    var badge = '';
+    if (stageNum >= 0) {
+      var sn = Math.min(STAGE_NAMES.length - 1, Math.floor(stageNum / 40));
+      badge = '<span class="stage-badge"><i class="fa-regular fa-star"></i> ' + STAGE_NAMES[sn] + '</span>';
+    }
+
+    var h = '<div class="char-card">';
+
+    /* header */
+    h += '<div class="card-header"><span class="char-name"><i class="fa-regular fa-rose"></i>' + esc(name) + '</span>' + badge + '</div>';
+
+    /* tags */
+    h += '<div class="tag-row">';
+    if (age) h += '<span class="tag"><i class="fa-regular fa-cake"></i><span class="label">年龄</span> ' + esc(age) + '</span>';
+    if (hair) h += '<span class="tag"><i class="fa-regular fa-palette"></i><span class="label">发型</span> ' + esc(hair) + '</span>';
+    if (relation) h += '<span class="tag"><i class="fa-regular fa-heart"></i><span class="label">关系</span> ' + esc(relation) + '</span>';
+    h += '</div>';
+
+    /* clothing */
+    if (cp.upper.length || cp.lower.length) {
+      h += '<div class="clothing">';
+      if (cp.upper.length) {
+        h += '<div class="row"><span class="arrow">🔼</span><span class="items">';
+        for (var ui = 0; ui < cp.upper.length; ui++) h += '<span class="item">' + esc(cp.upper[ui]) + '</span>';
+        h += '</span></div>';
+      }
+      if (cp.lower.length) {
+        h += '<div class="row"><span class="arrow">🔽</span><span class="items">';
+        for (var li = 0; li < cp.lower.length; li++) h += '<span class="item">' + esc(cp.lower[li]) + '</span>';
+        h += '</span></div>';
+      }
+      h += '</div>';
+    }
+
+    /* extras */
+    var ex = [];
+    if (attitude) ex.push({i:'fa-regular fa-face-smile',t:'态度: '+attitude});
+    if (alertness != null) ex.push({i:'fa-regular fa-shield',t:'警惕: '+alertness});
+    if (marriage) ex.push({i:'fa-regular fa-ring',t:marriage});
+    if (happened === true || happened === 'true') ex.push({i:'fa-regular fa-fire',t:'已发生关系'});
+    else if (happened && happened !== 'false') ex.push({i:'fa-regular fa-fire',t:String(happened)});
+
+    if (ex.length) {
+      h += '<div class="extra-info">';
+      for (var ei = 0; ei < ex.length; ei++) h += '<span class="item"><i class="'+ex[ei].i+'"></i>'+esc(ex[ei].t)+'</span>';
+      h += '</div>';
+    }
+
+    h += '</div>';
+    return h;
+  }
+
+  /* ============================================================
+     MODULE: Compose — assemble all cards
+     ============================================================ */
+  var CARD_ORDER = ['\u90d1\u6021\u4e91','\u9646\u4f9d\u4f9d','\u84c9\u963f\u59e8'];
+  var SKIP_KEYS = { '\u65f6\u95f4':1, 'user':1, '\u5b89\u8bfa':1, '\u5bb6\u5ead':1, '\u51cc\u5c0f\u5317':1 };
+
+  function renderAll(data) {
+    var names = [];
+    for (var i = 0; i < CARD_ORDER.length; i++) { if (data[CARD_ORDER[i]]) names.push(CARD_ORDER[i]); }
+    for (var k in data) { if (!SKIP_KEYS[k] && names.indexOf(k) < 0) names.push(k); }
+
+    var html = '';
+    for (var ni = 0; ni < names.length; ni++) {
+      html += renderCard(names[ni], data[names[ni]] || {});
+    }
+    cardContainer.innerHTML = html;
+  }
+
+  /* ============================================================
+     MODULE: Poll — read data & dispatch render
+     ============================================================ */
+  function poll() {
+    try {
+      var data = readLatestData();
+      if (!data) {
+        showState(ready ? 'empty' : 'loading');
+        prevKey = '';
+        return;
+      }
+      ready = true;
+      var key = JSON.stringify(data['\u90d1\u6021\u4e91']);
+      if (key === prevKey) return;
+      prevKey = key;
+      renderAll(data);
+    } catch(e) { console.warn('[母上攻略] poll:', e); }
+  }
+
+  /* ============================================================
+     MODULE: Lifecycle — init, events, timers
+     ============================================================ */
+  function init() {
+    showState('loading');
+    pollTimer = setInterval(poll, 3000);
+    poll();
+  }
+
+  try {
+    if (window.Mvu && window.Mvu.events && window.Mvu.events.VARIABLE_UPDATE_ENDED && typeof window.eventOn === 'function') {
+      window.eventOn(window.Mvu.events.VARIABLE_UPDATE_ENDED, function() { if(ready){prevKey='';poll();} });
+    }
+  } catch(e) {}
+
+  init();
+
+  /* cleanup on page hide */
+  try { window.addEventListener('pagehide', function() { if(pollTimer){clearInterval(pollTimer);pollTimer=null;} }); } catch(e) {}
+
+})();
+</script>
+</body>
+</html>
